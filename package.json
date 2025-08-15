@@ -1,20 +1,39 @@
 {
   "name": "property-finder",
   "version": "1.0.0",
-  "description": "Property finder application with automated scraping",
+  "description": "Property finder application with automated scraping - Cloud Edition",
   "main": "property-finder-api/src/server.js",
   "scripts": {
     "start": "cd property-finder-api && npm start",
-    "install": "cd property-finder-api && npm install",
-    "build": "cd property-finder-ui && npm install && npm run build",
-    "dev": "cd property-finder-api && npm run dev"
+    "install:api": "cd property-finder-api && npm install",
+    "install:ui": "cd property-finder-ui && npm install",
+    "build": "npm run install:ui && cd property-finder-ui && npm run build",
+    "dev:api": "cd property-finder-api && npm run dev",
+    "dev:ui": "cd property-finder-ui && npm run dev",
+    "vercel-build": "npm run build",
+    "test:deployment": "python verify_cloud_deployment.py",
+    "setup:cloud": "echo 'Please follow the setup guide in FULL_CLOUD_DEPLOY.md'"
   },
   "engines": {
     "node": ">=18.0.0"
   },
   "dependencies": {
-    "pg": "^8.16.3",
-    "pg-copy-streams": "^7.0.0",
-    "xlsx": "^0.18.5"
+    "@supabase/supabase-js": "^2.45.4"
+  },
+  "keywords": [
+    "property-finder",
+    "real-estate",
+    "scraping",
+    "vercel",
+    "supabase",
+    "serverless",
+    "react",
+    "nodejs"
+  ],
+  "author": "Property Finder Team",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/yourusername/property-finder.git"
   }
 }

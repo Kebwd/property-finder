@@ -1,0 +1,25 @@
+# Supabase Configuration
+
+## Local Development
+To run Supabase locally:
+
+```bash
+npx supabase init
+npx supabase start
+npx supabase db reset
+```
+
+## Environment Variables
+Add these to your Vercel environment variables:
+
+- `SUPABASE_URL`: Your Supabase project URL
+- `SUPABASE_ANON_KEY`: Your Supabase anon public key
+- `SUPABASE_DB_URL`: Your Supabase database connection string
+- `GEOCODING_API_KEY`: Your Google Maps Geocoding API key
+
+## Database Setup
+The migration files will create:
+- `stores` table with PostGIS support
+- Appropriate indexes for performance
+- Row Level Security policies
+- Automatic timestamp triggers
