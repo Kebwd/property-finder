@@ -3,10 +3,7 @@
   "builds": [
     {
       "src": "property-finder-api/src/server.js",
-      "use": "@vercel/node",
-      "config": {
-        "maxLambdaSize": "50mb"
-      }
+      "use": "@vercel/node"
     },
     {
       "src": "property-finder-ui/package.json",
@@ -16,49 +13,14 @@
       }
     }
   ],
-  "env": {
-    "NODE_ENV": "production"
-  },
-  "headers": [
+  "routes": [
     {
-      "source": "/api/(.*)",
-      "headers": [
-        {
-          "key": "Access-Control-Allow-Origin",
-          "value": "*"
-        },
-        {
-          "key": "Access-Control-Allow-Methods",
-          "value": "GET, POST, PUT, DELETE, OPTIONS"
-        },
-        {
-          "key": "Access-Control-Allow-Headers",
-          "value": "Content-Type, Authorization"
-        },
-        {
-          "key": "Cache-Control",
-          "value": "s-maxage=60, stale-while-revalidate=300"
-        }
-      ]
+      "src": "/api/(.*)",
+      "dest": "property-finder-api/src/server.js"
     },
     {
-      "source": "/static/(.*)",
-      "headers": [
-        {
-          "key": "Cache-Control",
-          "value": "public, max-age=31536000, immutable"
-        }
-      ]
-    }
-  ],
-  "rewrites": [
-    {
-      "source": "/health",
-      "destination": "/api/health"
-    },
-    {
-      "source": "/api/(.*)",
-      "destination": "/property-finder-api/src/server.js"
+      "src": "/(.*)",
+      "dest": "property-finder-ui/dist/$1"
     }
   ]
 }
