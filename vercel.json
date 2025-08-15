@@ -1,5 +1,18 @@
 {
-  "buildCommand": "cd property-finder-ui && npm ci && npm run build",
-  "outputDirectory": "property-finder-ui/dist",
-  "installCommand": "cd property-finder-ui && npm ci"
+  "version": 2,
+  "builds": [
+    {
+      "src": "property-finder-ui/package.json",
+      "use": "@vercel/static-build",
+      "config": { 
+        "distDir": "dist"
+      }
+    }
+  ],
+  "routes": [
+    {
+      "src": "/(.*)",
+      "dest": "/property-finder-ui/dist/$1"
+    }
+  ]
 }
