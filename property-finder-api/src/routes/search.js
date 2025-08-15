@@ -5,9 +5,10 @@ import { geocode } from '../utils.js';
 import multer from 'multer';
 import csvParser from 'csv-parser';
 import { parseChinesePrice } from '../parsePrice.js';
-import fs from 'fs';
+import { Readable } from 'stream';
 const router = express.Router();
-const upload = multer({ dest: 'uploads' });
+// Use memory storage for Vercel serverless functions (read-only filesystem)
+const upload = multer({ storage: multer.memoryStorage() });
 
 // Common function to build WHERE clause for geospatial queries
 export const buildWhereClause = (lat, lng, radius) => {
@@ -144,9 +145,16 @@ router.get('/', async (req, res) => {
 router.post('/upload', upload.single('file'), (req, res, next) => {
   console.log('CSV import started');
   const rows = [];
-  const filePath = req.file.path;
+  
+  // For memory storage, use the buffer instead of file path
+  const fileBuffer = req.file.buffer;
+  
+  // Create a readable stream from buffer
+  const bufferStream = new Readable();
+  bufferStream.push(fileBuffer);
+  bufferStream.push(null);
 
-  fs.createReadStream(filePath)
+  bufferStream
     .pipe(csvParser({
       bom: true,
       mapHeaders: ({ header }) => header.trim().toLowerCase(),
@@ -305,11 +313,11 @@ router.post('/upload', upload.single('file'), (req, res, next) => {
         return next(err);
       } finally {
         if (client) client.release();
-        fs.unlinkSync(filePath);
+        // No file cleanup needed with memory storage
       }
     })
     .on('error', err => {
-      fs.unlinkSync(filePath);
+      // No file cleanup needed with memory storage
       next(err);
     });
 });
