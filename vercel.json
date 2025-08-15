@@ -1,26 +1,5 @@
 {
-  "version": 2,
-  "builds": [
-    {
-      "src": "property-finder-api/src/server.js",
-      "use": "@vercel/node"
-    },
-    {
-      "src": "property-finder-ui/package.json",
-      "use": "@vercel/static-build",
-      "config": {
-        "distDir": "dist"
-      }
-    }
-  ],
-  "routes": [
-    {
-      "src": "/api/(.*)",
-      "dest": "property-finder-api/src/server.js"
-    },
-    {
-      "src": "/(.*)",
-      "dest": "property-finder-ui/dist/$1"
-    }
-  ]
+  "buildCommand": "cd property-finder-ui && npm ci && npm run build",
+  "outputDirectory": "property-finder-ui/dist",
+  "installCommand": "cd property-finder-ui && npm ci"
 }
