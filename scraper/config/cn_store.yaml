@@ -1,0 +1,36 @@
+key_mapping:
+  mapping_source: "key_library.py"
+
+config:
+  - zone: "China"
+    type: "store"
+    start_urls:
+      - "https://m.anjuke.com/gz/sp/shou/?from=bizhome_buyshop"
+    fields:
+      province: province
+      city: city
+      district: district
+      street: street
+      road: road
+      type: type
+      building_name_zh: building_name_zh
+      floor: floor
+      unit: unit
+      area: area
+      deal_date: deal_date
+      deal_price: deal_price
+      developer: developer
+    xpaths:
+      province: ["//span[@class='province']//text()"]
+      city: ["//span[@class='city']//text()"]
+      district: ["//span[@class='district']//text()"]
+      street: ["//span[@class='street']//text()"]
+      road: ["//span[@class='road']//text()"]
+      type: ["//span[@class='property-type']//text()"]
+      building_name_zh: ["//h4[@class='property-name']//text()", "//div[@class='property-title']//text()"]
+      floor: ["//span[@class='floor']//text()"]
+      unit: ["//span[@class='unit']//text()"]
+      area: ["//span[@class='area']//text()"]
+      deal_date: ["//span[@class='deal-date']//text()"]
+      deal_price: ["//span[@class='price']//text()", "//div[@class='price-info']//text()"]
+      developer: ["//span[@class='developer']//text()"]

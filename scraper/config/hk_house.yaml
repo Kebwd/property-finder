@@ -1,0 +1,21 @@
+key_mapping:
+  mapping_source: "type_mapping.yaml"
+
+zone: "Hong Kong"
+type: "house"
+
+start_urls:
+  - "https://www.example.com/houses"
+
+fields:
+  type: type
+  estate_name_zh: estate_name_zh
+  flat: flat
+  building_name_zh: building_name_zh
+  floor: floor
+  unit: unit
+  area: area
+  house_type: house_type
+  deal_date: deal_date
+  deal_price: deal_price
+  developer: developer

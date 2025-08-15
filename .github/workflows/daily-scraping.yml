@@ -1,0 +1,91 @@
+name: Daily Property Scraping
+
+on:
+  # Run daily at 2 AM UTC (adjust timezone as needed)
+  schedule:
+    - cron: '0 2 * * *'
+  
+  # Allow manual triggering
+  workflow_dispatch:
+    inputs:
+      force_run:
+        description: 'Force run even if recent scraping occurred'
+        required: false
+        default: 'false'
+        type: boolean
+
+jobs:
+  trigger-scraping:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Trigger Scraping
+      run: |
+        echo "🕷️  Triggering daily property scraping..."
+        
+        # Make API request to trigger scraping
+        response=$(curl -s -w "\n%{http_code}" \
+          -X POST \
+          -H "Content-Type: application/json" \
+          -H "X-API-Key: ${{ secrets.SCRAPER_API_KEY }}" \
+          "${{ secrets.API_BASE_URL }}/api/scraper/start")
+        
+        # Extract response body and status code
+        http_code=$(echo "$response" | tail -n1)
+        response_body=$(echo "$response" | head -n -1)
+        
+        echo "Response: $response_body"
+        echo "HTTP Status: $http_code"
+        
+        # Check if request was successful
+        if [ "$http_code" -eq 200 ]; then
+          echo "✅ Scraping started successfully"
+        elif [ "$http_code" -eq 429 ]; then
+          echo "⏰ Scraping was rate limited (too recent)"
+          if [ "${{ github.event.inputs.force_run }}" = "true" ]; then
+            echo "❌ Force run requested but still rate limited"
+            exit 1
+          else
+            echo "ℹ️  This is normal for scheduled runs"
+            exit 0
+          fi
+        else
+          echo "❌ Failed to start scraping"
+          exit 1
+        fi
+    
+    - name: Wait and Check Status
+      run: |
+        echo "⏳ Waiting 30 seconds then checking status..."
+        sleep 30
+        
+        # Check scraping status
+        status_response=$(curl -s \
+          "${{ secrets.API_BASE_URL }}/api/scraper/status")
+        
+        echo "Status: $status_response"
+        
+        # Parse status (basic check)
+        if echo "$status_response" | grep -q '"isRunning":true'; then
+          echo "🏃 Scraping is running..."
+        elif echo "$status_response" | grep -q '"success":true'; then
+          echo "✅ Scraping completed successfully"
+        elif echo "$status_response" | grep -q '"success":false'; then
+          echo "❌ Scraping failed"
+          echo "$status_response"
+          exit 1
+        else
+          echo "❓ Unknown status"
+          echo "$status_response"
+        fi
+    
+    - name: Get Recent Logs
+      if: always()
+      run: |
+        echo "📋 Fetching recent scraping logs..."
+        
+        logs_response=$(curl -s \
+          "${{ secrets.API_BASE_URL }}/api/scraper/logs?limit=10")
+        
+        echo "Recent logs:"
+        echo "$logs_response"

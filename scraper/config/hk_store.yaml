@@ -1,0 +1,51 @@
+key_mapping:
+  mapping_source: "key_library.py"
+
+config:
+  - zone: "Hong Kong"
+    type: store
+    json_url_template: "https://www.midlandici.com.hk/ics/property/transaction/json?tx_type%5B%5D=S&ics_type=&lang=zh-hk&page_size=20&cursor={cursor}&order=tx_date-desc"
+    start_urls:
+      - "https://www.midlandici.com.hk/ics/property/transaction/sold?lang=zh-hk"
+    fields:
+      type: type
+      building_name_zh: building_name_zh
+      floor: floor
+      unit: unit
+      area: area
+      deal_date: tx_date
+      deal_price: deal_price
+      developer: developer
+    xpaths:
+      type: ["./td[2]//text()"]
+      building_name_zh: ["./td[3]//text()"]
+      floor: ["./td[4]//text()"]
+      unit: ["./td[5]//text()"]
+      deal_date: ["./td[1]//text()"]
+      area: ["./td[7]//text()"]
+      deal_price: ["./td[8]//text()"]
+      developer: ["./td[9]//text()"]
+
+
+  - zone: "Hong Kong"
+    type: store
+    start_urls:
+      - "https://oir.centanet.com/transaction/search/?daterang=01%2F07%2F2025-01%2F08%2F2025&posttype=S"
+    fields:
+      type: type
+      building_name_zh: propertyNameCn
+      floor: floor
+      unit: unit
+      area: area
+      deal_date: deal_date
+      deal_price: deal_price
+      developer: developer
+    xpaths:
+      type: ["./td[2]//text()"]
+      building_name_zh: ["./td[4]/div[1]//text()"]
+      floor: ["./td[5]//text()"]
+      unit: ["./td[6]//text()"]
+      area: ["./td[7]//text()"]
+      deal_date: ["./td[1]//text()"]
+      deal_price: ["./td[8]//text()"]
+      developer: ["./td[9]//text()"]

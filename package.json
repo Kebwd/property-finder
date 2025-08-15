@@ -1,0 +1,20 @@
+{
+  "name": "property-finder",
+  "version": "1.0.0",
+  "description": "Property finder application with automated scraping",
+  "main": "property-finder-api/src/server.js",
+  "scripts": {
+    "start": "cd property-finder-api && npm start",
+    "install": "cd property-finder-api && npm install",
+    "build": "cd property-finder-ui && npm install && npm run build",
+    "dev": "cd property-finder-api && npm run dev"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "dependencies": {
+    "pg": "^8.16.3",
+    "pg-copy-streams": "^7.0.0",
+    "xlsx": "^0.18.5"
+  }
+}

@@ -1,0 +1,45 @@
+key_mapping:
+  mapping_source: "key_libraby.py"
+
+config:
+  - zone: "China"
+    type: "house"
+
+    start_urls:
+      - "https://sz.centanet.com/chengjiao/"
+    fields:
+      province: province
+      city: city
+      country: country
+      town: town
+      street: street
+      road: road
+      type: type
+      estate_name_zh: estate_name_zh
+      flat: flat
+      building_name_zh: building_name_zh
+      floor: floor
+      unit: unit
+      area: area
+      house_type: house_type
+      deal_date: deal_date
+      deal_price: deal_price
+      developer: developer
+    xpaths:
+      province: province
+      city: city
+      country: country
+      town: town
+      street: street
+      road: road
+      type: type
+      estate_name_zh: estate_name_zh
+      flat: flat
+      building_name_zh: "//a[@class='house-title']"
+      floor: floor
+      unit: unit
+      area: area
+      house_type: "/html/body/div[5]/div/div[2]/div[1]/div[1]/p[1]/span[1]"
+      deal_date: deal_date
+      deal_price: deal_price
+      developer: developer

@@ -1,0 +1,20 @@
+spiders:
+  - name: hk_stores_spider
+    zone: Hong Kong
+    type: store
+    config: config/hk_stores.yaml
+
+  - name: hk_house_spider
+    zone: Hong Kong
+    type: house
+    config: config/hk_house.yaml
+
+  - name: cn_stores_spider
+    zone: China
+    type: store
+    config: config/cn_stores.yaml
+
+  - name: cn_house_spider
+    zone: China
+    type: house
+    config: config/cn_house.yaml
