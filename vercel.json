@@ -1,14 +1,35 @@
 {
-  "buildCommand": "cd property-finder-ui && npm install && npm run build",
-  "outputDirectory": "./property-finder-ui/dist",
+  "version": 2,
+  "builds": [
+    {
+      "src": "package.json",
+      "use": "@vercel/static-build",
+      "config": {
+        "distDir": "dist"
+      }
+    }
+  ],
   "routes": [
     {
       "src": "/api/(.*)",
       "dest": "/api/$1"
     },
     {
+      "src": "/assets/(.*)",
+      "dest": "/assets/$1"
+    },
+    {
       "src": "/(.*)",
-      "dest": "/$1"
+      "dest": "/index.html"
     }
-  ]
+  ],
+  "functions": {
+    "api/**/*.js": {
+      "runtime": "nodejs18.x",
+      "environment": {
+        "SUPABASE_URL": "@supabase_url",
+        "SUPABASE_SERVICE_ROLE_KEY": "@supabase_service_role_key"
+      }
+    }
+  }
 }
