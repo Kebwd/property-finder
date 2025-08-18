@@ -66,7 +66,13 @@ module.exports = async function handler(req, res) {
     const client = await pool.connect();
 
     // Build dynamic query with filtering
-    let whereConditions = ["ABS(CAST(l.lat AS FLOAT) - $1) + ABS(CAST(l.long AS FLOAT) - $2) < 0.1"];
+    let whereConditions = [`
+      6371000 * acos(
+        cos(radians($1)) * cos(radians(CAST(l.lat AS FLOAT))) *
+        cos(radians(CAST(l.long AS FLOAT)) - radians($2)) +
+        sin(radians($1)) * sin(radians(CAST(l.lat AS FLOAT)))
+      ) <= ${parseInt(radius)}
+    `];
     let queryParams = [searchLat, searchLng];
     let paramIndex = 3;
 
@@ -87,7 +93,7 @@ module.exports = async function handler(req, res) {
 
     const whereClause = whereConditions.join(' AND ');
 
-    // Simple search query without PostGIS for now
+    // Simple search query with proper distance calculation in meters
     const query = `
       SELECT 
         'business' AS source,
@@ -109,7 +115,13 @@ module.exports = async function handler(req, res) {
         l.road,
         l.lat,
         l.long,
-        ABS(CAST(l.lat AS FLOAT) - $1) + ABS(CAST(l.long AS FLOAT) - $2) AS distance
+        ROUND(
+          6371000 * acos(
+            cos(radians($1)) * cos(radians(CAST(l.lat AS FLOAT))) *
+            cos(radians(CAST(l.long AS FLOAT)) - radians($2)) +
+            sin(radians($1)) * sin(radians(CAST(l.lat AS FLOAT)))
+          )
+        ) AS distance
       FROM business b
       JOIN location_info l ON b.location_id = l.id
       WHERE ${whereClause}

@@ -247,7 +247,10 @@ export default function App() {
                     {types.includes(store.type) ? store.type : '未知'}
                   </div>
                   <div className="distance-badge">
-                    {Math.round(store.distance)}M
+                    {store.distance >= 1000 
+                      ? `${(store.distance / 1000).toFixed(1)}KM`
+                      : `${Math.round(store.distance)}M`
+                    }
                   </div>
                 </div>
                 
