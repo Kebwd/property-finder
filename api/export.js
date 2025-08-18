@@ -122,12 +122,11 @@ module.exports = async function handler(req, res) {
 
     console.log('Creating Excel workbook...');
     
-    // Create workbook and worksheet
+    // Create workbook
     const workbook = XLSX.utils.book_new();
-    const worksheet = XLSX.utils.json_to_sheet(excelData);
 
     // Set column widths for better readability
-    worksheet['!cols'] = [
+    const columnWidths = [
       { wch: 10 },  // 記錄類型
       { wch: 8 },   // 市
       { wch: 12 },  // 區
@@ -145,8 +144,30 @@ module.exports = async function handler(req, res) {
       { wch: 12 }   // 房屋類型
     ];
 
-    // Add the worksheet to workbook
-    XLSX.utils.book_append_sheet(workbook, worksheet, '物業成交記錄');
+    // Create main worksheet with all data
+    const mainWorksheet = XLSX.utils.json_to_sheet(excelData);
+    mainWorksheet['!cols'] = columnWidths;
+    XLSX.utils.book_append_sheet(workbook, mainWorksheet, '物業成交記錄');
+
+    // Separate data by property type
+    const businessData = excelData.filter(row => row['記錄類型'] === '商業物業');
+    const residentialData = excelData.filter(row => row['記錄類型'] === '住宅物業');
+
+    // Create business properties worksheet
+    if (businessData.length > 0) {
+      const businessWorksheet = XLSX.utils.json_to_sheet(businessData);
+      businessWorksheet['!cols'] = columnWidths;
+      XLSX.utils.book_append_sheet(workbook, businessWorksheet, '商業物業');
+      console.log('Added business properties sheet with', businessData.length, 'records');
+    }
+
+    // Create residential properties worksheet  
+    if (residentialData.length > 0) {
+      const residentialWorksheet = XLSX.utils.json_to_sheet(residentialData);
+      residentialWorksheet['!cols'] = columnWidths;
+      XLSX.utils.book_append_sheet(workbook, residentialWorksheet, '住宅物業');
+      console.log('Added residential properties sheet with', residentialData.length, 'records');
+    }
 
     // Generate Excel buffer
     const buffer = XLSX.write(workbook, { 
