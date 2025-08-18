@@ -1,7 +1,5 @@
 {
-  "functions": {
-    "api/*.js": {
-      "runtime": "nodejs18.x"
-    }
-  }
+  "buildCommand": "cd property-finder-ui && npm install && npm run build",
+  "outputDirectory": "property-finder-ui/dist",
+  "installCommand": "npm install"
 }
