@@ -64,13 +64,35 @@ module.exports = async function handler(req, res) {
 
     const client = await pool.connect();
 
+    // Build dynamic query with filtering
+    let whereConditions = ["ABS(CAST(l.lat AS FLOAT) - $1) + ABS(CAST(l.long AS FLOAT) - $2) < 0.1"];
+    let queryParams = [searchLat, searchLng];
+    let paramIndex = 3;
+
+    // Add type filter
+    if (type === 'business') {
+      // Only business results
+    } else if (type === 'house') {
+      // We'll need to add house query later
+    }
+
+    // Add date filter 
+    if (dateRange) {
+      const days = parseInt(dateRange);
+      if (!isNaN(days)) {
+        whereConditions.push(`b.deal_date >= CURRENT_DATE - INTERVAL '${days} days'`);
+      }
+    }
+
+    const whereClause = whereConditions.join(' AND ');
+
     // Simple search query without PostGIS for now
     const query = `
       SELECT 
         'business' AS source,
         b.id,
         b.type,
-        b.building_name_zh as name,
+        b.building_name_zh as building_name_zh,
         NULL as estate_name_zh,
         NULL as flat,
         b.floor,
@@ -89,12 +111,14 @@ module.exports = async function handler(req, res) {
         ABS(CAST(l.lat AS FLOAT) - $1) + ABS(CAST(l.long AS FLOAT) - $2) AS distance
       FROM business b
       JOIN location_info l ON b.location_id = l.id
-      WHERE ABS(CAST(l.lat AS FLOAT) - $1) + ABS(CAST(l.long AS FLOAT) - $2) < 0.1
+      WHERE ${whereClause}
       ORDER BY distance
-      LIMIT $3 OFFSET $4
+      LIMIT $${paramIndex} OFFSET $${paramIndex + 1}
     `;
 
-    const result = await client.query(query, [searchLat, searchLng, limit, offset]);
+    queryParams.push(limit, offset);
+
+    const result = await client.query(query, queryParams);
     client.release();
     await pool.end();
     

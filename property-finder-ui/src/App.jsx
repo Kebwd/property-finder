@@ -85,21 +85,32 @@ export default function App() {
       url = `${import.meta.env.VITE_API_URL}/api/search/all?${params.toString()}`;
     } else {
       // Redirect to specific type
-      url = `${import.meta.env.VITE_API_URL}/api/${type}/search?${params.toString()}`;
+      url = `${import.meta.env.VITE_API_URL}/api/search/all?${params.toString()}&type=${type}`;
     }
     console.log('Sending request to:', url);
 
     // 3) Fetch and set the results
     try {
       console.log('Search Params:', { query, filterType, filterdate });
+      console.log('Making fetch request to:', url);
       const res = await fetch(url);
+      console.log('Response status:', res.status);
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
+        console.error('Response error:', body);
         throw new Error(body.error || `Server returned ${res.status}`);
       }
       const data = await res.json();
-      setStores(data);
+      console.log('Response data:', data);
+      if (data.success && data.data) {
+        console.log('Setting stores with data.data:', data.data.length, 'items');
+        setStores(data.data);
+      } else {
+        console.log('Setting stores with fallback:', data.data || data || []);
+        setStores(data.data || data || []);
+      }
       } catch (err) {
+        console.error('Fetch error:', err);
         setError(err.message);
         setStores([]);
       } finally {
