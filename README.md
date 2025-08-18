@@ -1,6 +1,6 @@
-# 🏠 Property Finder - Production Ready
+# 🏠 Property Finder - Cloud Native
 
-A modern property finder application with automated daily scraping, built for Railway deployment.
+A modern property finder application with automated daily scraping, built for Vercel + Supabase deployment.
 
 ## 🌟 Features
 
@@ -8,75 +8,89 @@ A modern property finder application with automated daily scraping, built for Ra
 - **📊 Data Visualization**: Interactive maps and charts
 - **🕷️ Automated Scraping**: Daily property data collection via GitHub Actions  
 - **📁 CSV Import/Export**: Bulk data management
-- **🌐 RESTful API**: Full-featured backend API
+- **🌐 RESTful API**: Serverless API functions
 - **📱 Modern UI**: Responsive React frontend
+- **☁️ Cloud-Native**: Full serverless deployment with Vercel + Supabase
 
-## 🚀 Quick Deploy to Railway
+## 🚀 Quick Deploy to Vercel + Supabase
 
-### 1. Upload to GitHub
-- Create new repository on GitHub
-- Upload all files from this directory
-- Commit with message: "Initial commit - Property finder app"
+### 1. Setup Supabase Database
+- Go to [supabase.com](https://supabase.com) and create a new project
+- Go to SQL Editor and run the migration scripts from `property-finder-api/migrations/`
+- Get your Project URL and Service Role Key from Settings → API
 
-### 2. Deploy to Railway
-- Go to [railway.app](https://railway.app)
-- Connect GitHub account
-- "New Project" → "Deploy from GitHub repo"
-- Select your repository
+### 2. Deploy to Vercel
+- Fork this repository to your GitHub
+- Go to [vercel.com](https://vercel.com) and import your fork
+- Set environment variables:
+  - `SUPABASE_URL`: Your Supabase project URL
+  - `SUPABASE_SERVICE_ROLE_KEY`: Your Supabase service role key
 
-### 3. Add Database
-- In Railway: "New" → "Database" → "PostgreSQL"
-- Railway auto-generates `DATABASE_URL`
+### 3. Configure GitHub Actions (Optional)
 
-### 4. Set Environment Variables
-```env
-NODE_ENV=production
-SCRAPER_API_KEY=your-secure-key-here
-SCRAPER_PATH=../scraper
-GEOCODING_API_KEY=your-google-maps-api-key
+For automated scraping, set repository secrets:
+- `VERCEL_DEPLOY_URL`: Your deployed Vercel app URL
+- `SCRAPER_API_KEY`: Generate a secure API key for scraper authentication
+
+## 🛠️ Environment Variables
+
+### Required for Vercel Deployment:
+```bash
+SUPABASE_URL=https://your-project.supabase.co
+SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
 ```
 
-### 5. Configure GitHub Secrets
-For automated scraping:
-```env
-SCRAPER_API_KEY=your-secure-key-here
-API_BASE_URL=https://your-app.railway.app
+### For Local Development:
+```bash
+DATABASE_URL=postgresql://postgres:password@localhost:5432/property_finder
+API_BASE_URL=http://localhost:5000
+VITE_API_URL=http://localhost:5000
+GEOCODING_API_KEY=your-google-maps-api-key
 ```
 
 ## 📁 Project Structure
 
 ```
 property-finder/
-├── property-finder-api/     # Node.js API server
-├── property-finder-ui/      # React frontend
-├── scraper/                 # Python web scraping
-├── .github/workflows/       # GitHub Actions automation
-├── Dockerfile              # Railway deployment
-├── railway.toml            # Railway configuration
-└── README.md               # This file
+├── api/                    # Vercel serverless functions
+│   ├── health.js          # Health check endpoint
+│   ├── debug.js           # Debug information
+│   └── search.js          # Property search API
+├── src/                   # React frontend
+│   ├── App.jsx           # Main application component
+│   ├── components/       # Reusable UI components
+│   └── utils/           # Utility functions
+├── property-finder-api/   # Original API (for reference)
+├── scraper/              # Python scraping system
+├── vercel.json           # Vercel deployment config
+└── package.json          # Node.js dependencies
 ```
 
 ## 🔧 API Endpoints
 
-- `GET /health` - System health check
-- `GET /api/search` - Search properties
-- `POST /api/house` - Add house record
-- `POST /api/business` - Add business record
-- `POST /api/scraper/start` - Trigger scraping
-- `GET /api/scraper/status` - Check scraping status
+- **GET** `/api/health` - Health check and database status
+- **GET** `/api/debug` - Debug information and table counts
+- **GET** `/api/search` - Property search with filters
+  - Query parameters: `address`, `type`, `page`, `limit`, `category`, `filter_date`
 
 ## 🕷️ Automated Scraping
 
-- **Schedule**: Daily at 2 AM UTC
-- **Trigger**: GitHub Actions workflow
+- **Schedule**: Daily at 2 AM UTC via GitHub Actions
+- **Trigger**: Automated workflow or manual dispatch
 - **Security**: API key authentication
-- **Monitoring**: Status and logs via API
+- **Target**: Vercel deployment endpoint
 
-## 🧪 Testing
+## 🧪 Testing the Deployment
 
-After deployment, verify with:
 ```bash
-python verify_deployment.py https://your-app.railway.app your-api-key
+# Test health endpoint
+curl https://your-app.vercel.app/api/health
+
+# Test search endpoint
+curl "https://your-app.vercel.app/api/search?address=香港&type=all&page=1"
+
+# Test debug information
+curl https://your-app.vercel.app/api/debug
 ```
 
 ## 📚 Documentation

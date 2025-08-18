@@ -4,17 +4,31 @@
   "description": "Property finder application with automated scraping",
   "main": "property-finder-api/src/server.js",
   "scripts": {
-    "start": "cd property-finder-api && npm start",
-    "install": "cd property-finder-api && npm install",
-    "build": "cd property-finder-ui && npm install && npm run build",
-    "dev": "cd property-finder-api && npm run dev"
+    "build": "vite build",
+    "dev": "vite",
+    "preview": "vite preview",
+    "start": "vite preview"
   },
   "engines": {
     "node": ">=18.0.0"
   },
   "dependencies": {
+    "leaflet": "^1.9.4",
+    "react": "^18.3.0",
+    "react-dom": "^18.3.0",
+    "react-leaflet": "^4.2.1",
+    "@supabase/supabase-js": "^2.45.4",
     "pg": "^8.16.3",
     "pg-copy-streams": "^7.0.0",
     "xlsx": "^0.18.5"
+  },
+  "devDependencies": {
+    "@tsconfig/node22": "^22.0.2",
+    "@vitejs/plugin-react": "^4.0.0",
+    "autoprefixer": "^10.4.21",
+    "husky": "^4.3.8",
+    "postcss": "^8.5.6",
+    "tailwindcss": "^3.4.17",
+    "vite": "^4.3.8"
   }
 }
