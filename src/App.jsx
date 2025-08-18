@@ -2,6 +2,7 @@ import { useState } from 'react';
 import DataImportExport from './DataImportExport';
 import NewDealForm from './NewDealForm';
 import { geocode }      from './utils/geocode';
+import { API_URL } from './config/api.js';
 import './App.css';
 
 export default function App() {
@@ -33,7 +34,7 @@ export default function App() {
     setPage(pg);
 
     const params = new URLSearchParams({ address: addr, page: pg, limit: 10 });
-    const res = await fetch(`${import.meta.env.VITE_API_URL}/stores?${params}`);
+    const res = await fetch(`${API_URL}/stores?${params}`);
     if (!res.ok) {
       setStores([]); // mark “no results”
       return;
@@ -82,10 +83,10 @@ export default function App() {
     let url;
     if (type === '') {
       // Show all results
-      url = `${import.meta.env.VITE_API_URL}/api/search/all?${params.toString()}`;
+      url = `${API_URL}/api/search/all?${params.toString()}`;
     } else {
       // Redirect to specific type
-      url = `${import.meta.env.VITE_API_URL}/api/${type}/search?${params.toString()}`;
+      url = `${API_URL}/api/${type}/search?${params.toString()}`;
     }
     console.log('Sending request to:', url);
 
