@@ -8,8 +8,8 @@ import { Transform } from 'stream';
 
 const { to: copyTo } = copyStreams;
 const router = express.Router();
-// Use memory storage for Vercel serverless functions (read-only filesystem)
-const upload = multer({ storage: multer.memoryStorage() });
+//const upload = multer({ storage: multer.memoryStorage() });
+const upload = multer({ dest: 'uploads' });
 
 function filterEmptyRows() {
   return new Transform({

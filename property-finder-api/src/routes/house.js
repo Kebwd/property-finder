@@ -8,8 +8,8 @@ import { Transform } from 'stream';
 
 const { to: copyTo } = copyStreams;
 const router = express.Router();
-// Use memory storage for Vercel serverless functions (read-only filesystem)
-const upload = multer({ storage: multer.memoryStorage() });
+//const upload = multer({ storage: multer.memoryStorage() });
+const upload = multer({ dest: 'uploads' });
 const typeMap = {
   '全部': [],
   '住宅單位': ['别墅', '公寓', '住宅单位','住宅單位'],

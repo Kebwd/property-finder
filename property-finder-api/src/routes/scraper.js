@@ -92,9 +92,22 @@ async function runScraping() {
   try {
     // Determine scraper path - could be relative to API or absolute
     const scraperPath = process.env.SCRAPER_PATH || '../scraper';
-    // Note: Scraper functionality is disabled in serverless environment
-    // Use GitHub Actions or external services for scraping
-    throw new Error('Scraper functionality is not available in serverless environment. Please use GitHub Actions or deploy the scraper separately.');
+    const scraperDir = path.resolve(scraperPath);
+    
+    addLog(`Using scraper directory: ${scraperDir}`);
+    
+    // Check if scraper directory exists
+    if (!fs.existsSync(scraperDir)) {
+      throw new Error(`Scraper directory not found: ${scraperDir}`);
+    }
+    
+    // Check if daily_scraper.py exists
+    const dailyScraperPath = path.join(scraperDir, 'daily_scraper.py');
+    if (!fs.existsSync(dailyScraperPath)) {
+      throw new Error(`daily_scraper.py not found at: ${dailyScraperPath}`);
+    }
+    
+    addLog('Starting scrapy process...');
     
     // Spawn the scraping process
     const child = spawn('python3', [dailyScraperPath], {

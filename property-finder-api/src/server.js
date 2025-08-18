@@ -5,6 +5,7 @@ import dotenv from 'dotenv';
 import { Pool } from 'pg';
 import fs from 'fs';
 import fetch from 'node-fetch';
+import { createClient } from 'redis';
 import exportRouter from './routes/export.js';
 import multer from 'multer';
 
@@ -20,24 +21,18 @@ if (!GEOCODING_API_KEY) {
     console.error('Failed to read geocoding API key from secret:', err.message);
   }
 }
-
-// For Vercel, we'll use environment variables instead of secrets
-if (!GEOCODING_API_KEY) {
-  console.warn('GEOCODING_API_KEY not found in secrets, using environment variable');
-  GEOCODING_API_KEY = process.env.GEOCODING_API_KEY;
-}
-
-console.log('GEOCODING_API_KEY:', GEOCODING_API_KEY ? 'Set' : 'Not set');
+console.log('GEOCODING_API_KEY:', GEOCODING_API_KEY);
 if (!GEOCODING_API_KEY) {
   console.error(
-    'Missing GEOCODING_API_KEY – please set the env var.'
+    'Missing GEOCODING_API_KEY – please set the env var or mount the secret file.'
   );
+  process.exit(1);
 }
 
-const pool = new Pool({ 
-  connectionString: process.env.DATABASE_URL || process.env.SUPABASE_DB_URL,
-  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
-});
+
+const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+const redis = createClient({ url: process.env.REDIS_URL });
+await redis.connect();
 
 const app = express();
 app.use(cors());
@@ -61,18 +56,14 @@ app.use(rateLimit({
   message: { error: 'Too many requests, slow down.' }
 }));
 
-// Simple in-memory cache for geocoding (for development)
-// In production, consider using Vercel KV or another caching solution
-const geocodeCache = new Map();
+const port = process.env.PORT || 5000;
+console.log('ENV PORT is', process.env.PORT, '— binding to', port);
+app.listen(port, () => console.log(`API listening on ${port}`));
 
 async function geocode(address) {
   const key = `geo:${address}`;
-  const cached = geocodeCache.get(key);
-  if (cached) return cached;
-
-  if (!GEOCODING_API_KEY) {
-    throw new Error('Geocoding API key not configured');
-  }
+  const cached = await redis.get(key);
+  if (cached) return JSON.parse(cached);
 
   const res = await fetch(
     `https://maps.googleapis.com/maps/api/geocode/json?` +
@@ -82,23 +73,11 @@ async function geocode(address) {
   const data = await res.json();
   const loc = data.results?.[0]?.geometry.location;
   if (!loc) throw new Error('Geocode failed');
-  
-  // Cache for 1 hour (simple in-memory cache)
-  geocodeCache.set(key, loc);
-  setTimeout(() => geocodeCache.delete(key), 3600000);
-  
+  await redis.set(key, JSON.stringify(loc), { EX: 86400 });
   return loc;
 }
 
 app.use((err, req, res, next) => {
-  console.error('Unhandled error:', err);
+  console.error('Unhandled error in CSV import:', err);
   res.status(500).json({ error: err.message });
 });
-
-// For Vercel, export the app instead of listening
-const port = process.env.PORT || 5000;
-if (process.env.NODE_ENV !== 'production') {
-  app.listen(port, () => console.log(`API listening on ${port}`));
-}
-
-export default app;

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-Daily Scrapy Automation Script - Cloud Edition
-Runs spider daily and sends data directly to Supabase
+Daily Scrapy Automation Script
+Runs spider daily and manages output files with timestamps
 """
 import os
 import sys
@@ -10,13 +10,9 @@ import json
 from datetime import datetime
 from pathlib import Path
 import shutil
-from dotenv import load_dotenv
-
-# Load environment variables
-load_dotenv()
 
 def run_daily_scrape(mode="daily", enable_database=True):
-    """Execute daily scraping with cloud database integration"""
+    """Execute daily scraping with proper file management"""
     timestamp = datetime.now()
     date_str = timestamp.strftime("%Y-%m-%d")
     time_str = timestamp.strftime("%H-%M-%S")
@@ -24,21 +20,13 @@ def run_daily_scrape(mode="daily", enable_database=True):
     mode_suffix = f"_{mode}" if mode != "daily" else ""
     
     print(f"🕷️  {mode.upper()} SCRAPE STARTING: {timestamp.strftime('%Y-%m-%d %H:%M:%S')}")
-    print("🌐  Running in CLOUD MODE - Data will be sent to Supabase")
     print("=" * 60)
     
-    # Validate cloud environment
-    required_env_vars = ['SUPABASE_URL', 'SUPABASE_DB_URL']
-    missing_vars = [var for var in required_env_vars if not os.getenv(var)]
-    if missing_vars:
-        print(f"❌ Missing required environment variables: {', '.join(missing_vars)}")
-        return False
-    
-    # Create daily output directory for logs
+    # Create daily output directory
     output_dir = Path("daily_output") / date_str
     output_dir.mkdir(parents=True, exist_ok=True)
     
-    # Define output files (for logging/backup only)
+    # Define output files
     json_output = output_dir / f"deals_{time_str}{mode_suffix}.json"
     log_output = output_dir / f"scrape_{time_str}{mode_suffix}.log"
     
