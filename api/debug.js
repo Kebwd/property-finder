@@ -31,17 +31,39 @@ export default async function handler(req, res) {
       ORDER BY table_name
     `);
     
-    // Get store count
-    const storeCountResult = await client.query('SELECT COUNT(*) as count FROM stores');
+    // Get location_info count
+    const locationCountResult = await client.query('SELECT COUNT(*) as count FROM location_info');
     
-    // Get house count if table exists
+    // Get house count
     let houseCount = 0;
     try {
-      const houseCountResult = await client.query('SELECT COUNT(*) as count FROM houses');
+      const houseCountResult = await client.query('SELECT COUNT(*) as count FROM house');
       houseCount = houseCountResult.rows[0].count;
     } catch (e) {
-      // houses table might not exist
+      // house table might not exist
     }
+
+    // Get sample data from both tables
+    const sampleHousesResult = await client.query(`
+      SELECT 
+        h.type,
+        h.estate_name_zh,
+        h.deal_price,
+        h.deal_date,
+        l.town,
+        l.street
+      FROM house h
+      JOIN location_info l ON h.location_id = l.id
+      ORDER BY h.deal_date DESC
+      LIMIT 5
+    `);
+
+    const sampleLocationsResult = await client.query(`
+      SELECT province, city, town, street, lat, long
+      FROM location_info
+      ORDER BY id
+      LIMIT 5
+    `);
 
     client.release();
 
@@ -52,8 +74,12 @@ export default async function handler(req, res) {
         type: process.env.SUPABASE_URL ? 'supabase' : 'postgresql',
         tables: tablesResult.rows,
         data_counts: {
-          stores: parseInt(storeCountResult.rows[0].count),
-          houses: parseInt(houseCount)
+          location_info: parseInt(locationCountResult.rows[0].count),
+          house: parseInt(houseCount)
+        },
+        sample_data: {
+          houses: sampleHousesResult.rows,
+          locations: sampleLocationsResult.rows
         }
       },
       environment: {

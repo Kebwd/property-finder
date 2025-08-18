@@ -82,10 +82,10 @@ export default function App() {
     let url;
     if (type === '') {
       // Show all results
-      url = `http://localhost:5000/api/search/all?${params.toString()}`;
+      url = `${import.meta.env.VITE_API_URL}/api/search/all?${params.toString()}`;
     } else {
       // Redirect to specific type
-      url = `http://localhost:5000/api/${type}/search?${params.toString()}`;
+      url = `${import.meta.env.VITE_API_URL}/api/${type}/search?${params.toString()}`;
     }
     console.log('Sending request to:', url);
 

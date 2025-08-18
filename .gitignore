@@ -86,3 +86,4 @@ daily_output/
 secrets/
 *.key
 *.pem
+.vercel

@@ -39,71 +39,196 @@ export default async function handler(req, res) {
     let queryParams = [];
     let paramIndex = 1;
 
-    // Determine which table to search based on type
-    if (type === 'business' || type === 'store') {
+    // Determine which tables to search based on type
+    if (type === 'business' || type === 'commercial') {
+      // Search only business table
       query = `
-        SELECT id, type, district, address, area, deal_date, price, 
-               ST_X(coordinates) as longitude, ST_Y(coordinates) as latitude,
-               created_at, updated_at
-        FROM stores
+        SELECT 
+          'business' as source,
+          b.id,
+          b.type,
+          b.building_name_zh as estate_name_zh,
+          '' as flat,
+          b.building_name_zh,
+          b.floor,
+          b.unit,
+          b.area,
+          b.type as house_type,
+          b.deal_price as price,
+          b.deal_date,
+          '' as developer,
+          l.province,
+          l.city,
+          l.town as district,
+          l.street,
+          l.road,
+          l.lat as latitude,
+          l.long as longitude,
+          CONCAT(l.province, l.city, l.town, l.street, l.road) as address
+        FROM business b
+        JOIN location_info l ON b.location_id = l.id
         WHERE 1=1
       `;
     } else if (type === 'house' || type === 'residential') {
+      // Search only house table
       query = `
-        SELECT id, type, district, address, area, deal_date, price,
-               ST_X(coordinates) as longitude, ST_Y(coordinates) as latitude,
-               created_at, updated_at
-        FROM houses
+        SELECT 
+          'house' as source,
+          h.id,
+          h.type,
+          h.estate_name_zh,
+          h.flat,
+          h.building_name_zh,
+          h.floor,
+          h.unit,
+          h.area,
+          h.house_type,
+          h.deal_price as price,
+          h.deal_date,
+          h.developer,
+          l.province,
+          l.city,
+          l.town as district,
+          l.street,
+          l.road,
+          l.lat as latitude,
+          l.long as longitude,
+          CONCAT(l.province, l.city, l.town, l.street, l.road) as address
+        FROM house h
+        JOIN location_info l ON h.location_id = l.id
         WHERE 1=1
       `;
     } else {
       // Search both tables
       query = `
-        SELECT 'store' as source, id, type, district, address, area, deal_date, price,
-               ST_X(coordinates) as longitude, ST_Y(coordinates) as latitude,
-               created_at, updated_at
-        FROM stores
+        SELECT 
+          'house' as source,
+          h.id,
+          h.type,
+          h.estate_name_zh,
+          h.flat,
+          h.building_name_zh,
+          h.floor,
+          h.unit,
+          h.area,
+          h.house_type,
+          h.deal_price as price,
+          h.deal_date,
+          h.developer,
+          l.province,
+          l.city,
+          l.town as district,
+          l.street,
+          l.road,
+          l.lat as latitude,
+          l.long as longitude,
+          CONCAT(l.province, l.city, l.town, l.street, l.road) as address
+        FROM house h
+        JOIN location_info l ON h.location_id = l.id
         WHERE 1=1
+        
         UNION ALL
-        SELECT 'house' as source, id, type, district, address, area, deal_date, price,
-               ST_X(coordinates) as longitude, ST_Y(coordinates) as latitude,
-               created_at, updated_at
-        FROM houses
+        
+        SELECT 
+          'business' as source,
+          b.id,
+          b.type,
+          b.estate_name_zh,
+          b.flat,
+          b.building_name_zh,
+          b.floor,
+          b.unit,
+          b.area,
+          b.business_type as house_type,
+          b.deal_price as price,
+          b.deal_date,
+          b.developer,
+          l.province,
+          l.city,
+          l.town as district,
+          l.street,
+          l.road,
+          l.lat as latitude,
+          l.long as longitude,
+          CONCAT(l.province, l.city, l.town, l.street, l.road) as address
+        FROM business b
+        JOIN location_info l ON b.location_id = l.id
         WHERE 1=1
       `;
     }
 
     // Add address filter if provided
     if (address && address.trim()) {
-      query += ` AND (address ILIKE $${paramIndex} OR district ILIKE $${paramIndex})`;
+      const addressFilter = ` AND (
+        l.town ILIKE $${paramIndex} OR 
+        l.street ILIKE $${paramIndex} OR 
+        l.road ILIKE $${paramIndex} OR
+        estate_name_zh ILIKE $${paramIndex} OR
+        building_name_zh ILIKE $${paramIndex}
+      )`;
+      
+      if (type === 'all') {
+        // For UNION query, we need to add the filter to both parts
+        query = query.replace(/WHERE 1=1/g, `WHERE 1=1 ${addressFilter}`);
+      } else {
+        query += addressFilter;
+      }
+      
       queryParams.push(`%${address.trim()}%`);
       paramIndex++;
     }
 
-    // Add category filter if provided
+    // Add type filter if provided
     if (category && category !== '全部') {
-      query += ` AND type = $${paramIndex}`;
+      const typeFilter = ` AND type = $${paramIndex}`;
+      
+      if (type === 'all') {
+        query = query.replace(/WHERE 1=1/g, `WHERE 1=1 ${typeFilter}`);
+      } else {
+        query += typeFilter;
+      }
+      
       queryParams.push(category);
       paramIndex++;
     }
 
     // Add date filter if provided
     if (filter_date) {
-      query += ` AND deal_date >= $${paramIndex}`;
+      const dateFilter = ` AND deal_date >= $${paramIndex}`;
+      
+      if (type === 'all') {
+        query = query.replace(/WHERE 1=1/g, `WHERE 1=1 ${dateFilter}`);
+      } else {
+        query += dateFilter;
+      }
+      
       queryParams.push(filter_date);
       paramIndex++;
     }
 
     // Add ordering and pagination
-    query += ` ORDER BY deal_date DESC, created_at DESC LIMIT $${paramIndex} OFFSET $${paramIndex + 1}`;
+    query += ` ORDER BY deal_date DESC, id DESC LIMIT $${paramIndex} OFFSET $${paramIndex + 1}`;
     queryParams.push(parseInt(limit), offset);
 
     const client = await pool.connect();
     const result = await client.query(query, queryParams);
     
-    // Get total count for pagination
-    let countQuery = query.replace(/SELECT.*?FROM/, 'SELECT COUNT(*) FROM').replace(/ORDER BY.*/, '');
-    const countResult = await client.query(countQuery, queryParams.slice(0, -2)); // Remove limit and offset params
+    // Get total count for pagination (simplified count query)
+    let countQuery;
+    if (type === 'business' || type === 'commercial') {
+      countQuery = 'SELECT COUNT(*) FROM business b JOIN location_info l ON b.location_id = l.id WHERE 1=1';
+    } else if (type === 'house' || type === 'residential') {
+      countQuery = 'SELECT COUNT(*) FROM house h JOIN location_info l ON h.location_id = l.id WHERE 1=1';
+    } else {
+      countQuery = `
+        SELECT (
+          (SELECT COUNT(*) FROM house h JOIN location_info l ON h.location_id = l.id WHERE 1=1) +
+          (SELECT COUNT(*) FROM business b JOIN location_info l ON b.location_id = l.id WHERE 1=1)
+        ) as count
+      `;
+    }
+    
+    const countResult = await client.query(countQuery);
     
     client.release();
 
