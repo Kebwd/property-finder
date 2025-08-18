@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Property Finder - Loading...</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            font-family: Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            text-align: center;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .container {
+            max-width: 600px;
+        }
+        .loading {
+            font-size: 18px;
+            margin: 20px 0;
+        }
+        .spinner {
+            border: 3px solid rgba(255,255,255,0.3);
+            border-radius: 50%;
+            border-top: 3px solid white;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .links {
+            margin-top: 30px;
+        }
+        .links a {
+            color: white;
+            text-decoration: none;
+            margin: 0 10px;
+            padding: 10px 20px;
+            border: 1px solid white;
+            border-radius: 5px;
+            display: inline-block;
+            margin-bottom: 10px;
+        }
+        .links a:hover {
+            background-color: rgba(255,255,255,0.2);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🏠 Property Finder</h1>
+        <div class="loading">Application is loading...</div>
+        <div class="spinner"></div>
+        
+        <div class="links">
+            <h3>Test API Endpoints:</h3>
+            <a href="/api/health" target="_blank">Health Check</a>
+            <a href="/api/debug" target="_blank">Debug Info</a>
+            <a href="/api/search" target="_blank">Search API</a>
+        </div>
+        
+        <p>If this page persists, please check the deployment logs.</p>
+    </div>
+
+    <script>
+        // Try to redirect to the built app after a short delay
+        setTimeout(() => {
+            const appUrl = window.location.origin + '/property-finder-ui/dist/';
+            console.log('Attempting to load app from:', appUrl);
+            // Try to fetch the app
+            fetch('/property-finder-ui/dist/index.html')
+                .then(response => {
+                    if (response.ok) {
+                        window.location.href = '/property-finder-ui/dist/';
+                    } else {
+                        document.querySelector('.loading').textContent = 'App build not found. Please check deployment.';
+                        document.querySelector('.spinner').style.display = 'none';
+                    }
+                })
+                .catch(error => {
+                    console.error('Failed to load app:', error);
+                    document.querySelector('.loading').textContent = 'Failed to load application. API endpoints should still work.';
+                    document.querySelector('.spinner').style.display = 'none';
+                });
+        }, 2000);
+    </script>
+</body>
+</html>
