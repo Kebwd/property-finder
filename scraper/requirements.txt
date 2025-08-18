@@ -1,4 +1,6 @@
-scrapy>=2.8.0
+# Python dependencies for property scraper
+scrapy>=2.13.3
 psycopg2-binary>=2.9.6
 requests>=2.31.0
-PyYAML>=5.3
+PyYAML>=6.0
+python-dotenv>=1.0.0
