@@ -18,16 +18,28 @@ async def get_coordinates(address):
 class StorePipeline:
     def open_spider(self, spider):
         try:
-            self.conn = psycopg2.connect(
-                host=os.getenv("DB_HOST", "localhost"),
-                port=os.getenv("DB_PORT", 5432),
-                dbname=os.getenv("DB_NAME", "postgres"),
-                user=os.getenv("DB_USER", "postgres"),
-                password=os.getenv("DB_PASSWORD", "k0410"),
-                client_encoding='utf8'  # Fix encoding issue
-            )
+            # First try to use DATABASE_URL (preferred for Supabase)
+            database_url = os.getenv('DATABASE_URL')
+            if database_url:
+                self.conn = psycopg2.connect(
+                    database_url,
+                    client_encoding='utf8'
+                )
+                spider.logger.info("✅ Database connection established using DATABASE_URL")
+            else:
+                # Fallback to individual environment variables
+                self.conn = psycopg2.connect(
+                    host=os.getenv("DB_HOST", "localhost"),
+                    port=os.getenv("DB_PORT", 5432),
+                    dbname=os.getenv("DB_NAME", "postgres"),
+                    user=os.getenv("DB_USER", "postgres"),
+                    password=os.getenv("DB_PASSWORD", "k0410"),
+                    client_encoding='utf8'
+                )
+                spider.logger.info("✅ Database connection established using individual settings")
+            
             self.cur = self.conn.cursor()
-            spider.logger.info("✅ Database connection established")
+            spider.logger.info("🗄️  Connected to Supabase database")
         except Exception as e:
             spider.logger.error(f"❌ Database connection failed: {e}")
             self.conn = None
