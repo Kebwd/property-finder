@@ -32,6 +32,7 @@ module.exports = async function handler(req, res) {
       page = 1, 
       perPage = 10,
       type,
+      specificType,
       dateRange 
     } = req.query;
 
@@ -69,11 +70,11 @@ module.exports = async function handler(req, res) {
     let queryParams = [searchLat, searchLng];
     let paramIndex = 3;
 
-    // Add type filter
-    if (type === 'business') {
-      // Only business results
-    } else if (type === 'house') {
-      // We'll need to add house query later
+    // Add specific type filter if provided
+    if (specificType && specificType !== '全部') {
+      whereConditions.push(`b.type = $${paramIndex}`);
+      queryParams.push(specificType);
+      paramIndex++;
     }
 
     // Add date filter 

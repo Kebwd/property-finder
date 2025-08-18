@@ -17,15 +17,31 @@ export default function App() {
   const types = ['全部', '寫字樓', '工商', '商舖', '車位', '辦公室','住宅單位','別墅','公寓','廠房','倉庫','土地'];
   const storetypes = ['寫字樓', '工商', '商舖', '車位', '辦公室','廠房','倉庫']
   const housetypes = ['住宅單位','別墅','公寓','土地']
+  
+  // Map display types to database types (since database might use different names)
+  const typeMapping = {
+    '寫字樓': '寫字樓',
+    '工商': '工商', 
+    '商舖': '商舖',
+    '車位': '車位',
+    '辦公室': '辦公室',
+    '住宅單位': '住宅單位',
+    '別墅': '別墅',
+    '公寓': '公寓',
+    '廠房': '廠房',
+    '倉庫': '倉庫',
+    '土地': '土地'
+  };
+  
   function findType(input) {
-  if (storetypes.includes(input)) {
-    return 'business';
-  } else if (housetypes.includes(input)) {
-    return 'house';
-  } else {
-    return ''; // or 'unknown'
+    if (storetypes.includes(input)) {
+      return 'business';
+    } else if (housetypes.includes(input)) {
+      return 'house';
+    } else {
+      return ''; // or 'unknown'
+    }
   }
-}
   const fetchStores = async (addr, pg = 1) => {
     if (!addr) return;
     // reset to null while loading
@@ -72,21 +88,18 @@ export default function App() {
       page:     '1',
       perPage:  '10'
     });
-    if (filterType) {
-      params.append('type', filterType);
+    if (filterType && filterType !== '全部') {
+      // Use the mapped type name for database query
+      const dbType = typeMapping[filterType] || filterType;
+      params.append('specificType', dbType);
+      console.log('Filter applied:', filterType, '→', dbType);
     }
     if (filterdate){
       params.append('dateRange',filterdate);
     }
     const type = findType(filterType);
-    let url;
-    if (type === '') {
-      // Show all results
-      url = `${import.meta.env.VITE_API_URL}/api/search/all?${params.toString()}`;
-    } else {
-      // Redirect to specific type
-      url = `${import.meta.env.VITE_API_URL}/api/search/all?${params.toString()}&type=${type}`;
-    }
+    // Always use the same endpoint for all searches
+    const url = `${import.meta.env.VITE_API_URL}/api/search/all?${params.toString()}`;
     console.log('Sending request to:', url);
 
     // 3) Fetch and set the results
