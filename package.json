@@ -3,7 +3,6 @@
   "version": "1.0.0",
   "description": "Property finder application with automated scraping",
   "main": "property-finder-api/src/server.js",
-  "type": "module",
   "scripts": {
     "build": "vite build",
     "dev": "vite",
