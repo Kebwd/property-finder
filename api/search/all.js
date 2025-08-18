@@ -41,7 +41,6 @@ module.exports = async function handler(req, res) {
 
     const searchLat = parseFloat(lat);
     const searchLng = parseFloat(lng);
-    const searchRadius = parseInt(radius);
     const limit = parseInt(perPage);
     const offset = (parseInt(page) - 1) * limit;
 
@@ -49,22 +48,23 @@ module.exports = async function handler(req, res) {
       return res.status(400).json({ error: 'Invalid latitude or longitude' });
     }
 
-    // Build dynamic WHERE clause for date filtering
-    let dateFilter = '';
-    const params = [searchLat, searchLng, searchRadius];
-    let paramIndex = 4;
-
-    if (dateRange && !isNaN(parseInt(dateRange, 10))) {
-      const days = parseInt(dateRange, 10);
-      const now = new Date();
-      now.setDate(now.getDate() - days);
-      const dateThreshold = now.toISOString().split('T')[0];
-      dateFilter = `AND h.deal_date >= $${paramIndex}`;
-      params.push(dateThreshold);
-      paramIndex++;
+    const connectionString = process.env.DATABASE_URL;
+    
+    if (!connectionString) {
+      return res.status(500).json({
+        success: false,
+        error: 'No DATABASE_URL configured'
+      });
     }
 
-    // Geospatial search query with both business and house tables
+    const pool = new Pool({
+      connectionString,
+      ssl: { rejectUnauthorized: false }
+    });
+
+    const client = await pool.connect();
+
+    // Simple search query without PostGIS for now
     const query = `
       SELECT 
         'business' AS source,
@@ -86,61 +86,17 @@ module.exports = async function handler(req, res) {
         l.road,
         l.lat,
         l.long,
-        ST_Distance(
-          ST_SetSRID(ST_Point(l.long, l.lat), 4326)::geography,
-          ST_SetSRID(ST_Point($2, $1), 4326)::geography
-        ) AS distance
+        ABS(CAST(l.lat AS FLOAT) - $1) + ABS(CAST(l.long AS FLOAT) - $2) AS distance
       FROM business b
       JOIN location_info l ON b.location_id = l.id
-      WHERE ST_DWithin(
-        ST_SetSRID(ST_Point(l.long, l.lat), 4326)::geography,
-        ST_SetSRID(ST_Point($2, $1), 4326)::geography,
-        $3
-      )
-      ${dateFilter.replace('h.', 'b.')}
-      
-      UNION ALL
-      
-      SELECT 
-        'house' AS source,
-        h.id,
-        h.type,
-        h.estate_name_zh as name,
-        h.estate_name_zh,
-        h.flat,
-        h.floor,
-        h.unit,
-        h.area,
-        h.deal_price,
-        h.deal_date,
-        h.developer,
-        l.province,
-        l.city,
-        l.town,
-        l.street,
-        l.road,
-        l.lat,
-        l.long,
-        ST_Distance(
-          ST_SetSRID(ST_Point(l.long, l.lat), 4326)::geography,
-          ST_SetSRID(ST_Point($2, $1), 4326)::geography
-        ) AS distance
-      FROM house h
-      JOIN location_info l ON h.location_id = l.id
-      WHERE ST_DWithin(
-        ST_SetSRID(ST_Point(l.long, l.lat), 4326)::geography,
-        ST_SetSRID(ST_Point($2, $1), 4326)::geography,
-        $3
-      )
-      ${dateFilter}
-      
+      WHERE ABS(CAST(l.lat AS FLOAT) - $1) + ABS(CAST(l.long AS FLOAT) - $2) < 0.1
       ORDER BY distance
-      LIMIT $${paramIndex} OFFSET $${paramIndex + 1}
+      LIMIT $3 OFFSET $4
     `;
 
-    params.push(limit, offset);
-
-    const result = await pool.query(query, params);
+    const result = await client.query(query, [searchLat, searchLng, limit, offset]);
+    client.release();
+    await pool.end();
     
     res.status(200).json({
       success: true,
@@ -153,7 +109,7 @@ module.exports = async function handler(req, res) {
       search_params: {
         lat: searchLat,
         lng: searchLng,
-        radius: searchRadius
+        radius: parseInt(radius)
       },
       timestamp: new Date().toISOString()
     });
