@@ -38,7 +38,11 @@ async function tryNominatim(query) {
 
 // Try Google Maps geocoding
 async function tryGoogle(query, region = 'HK') {
-  const key = process.env.GEOCODING_API_KEY;
+  // Note: This requires VITE_GEOCODING_API_KEY environment variable
+  const key = import.meta.env.VITE_GEOCODING_API_KEY;
+  if (!key) {
+    throw new Error('Google: API key not configured');
+  }
   const url = `${GOOGLE_BASE}?address=${encodeURIComponent(query)}&components=country:${region}&key=${key}`;
 
   const res = await fetch(url);
@@ -48,24 +52,6 @@ async function tryGoogle(query, region = 'HK') {
   }
   const loc = body.results[0].geometry.location;
   return { lat: loc.lat, lng: loc.lng };
-}
-
-// Local database fallback
-async function findBuildingInDB(query) {
-  const result = await db('location_info')
-    .select('lat', 'lng')
-    .whereRaw('LOWER(building_name_zh) LIKE ?', [`%${query.toLowerCase()}%`])
-    .first();
-
-  if (result) return { lat: result.lat, lng: result.lng };
-
-  // Fallback to estate name if needed
-  const fallback = await db('location_info')
-    .select('lat', 'lng')
-    .whereRaw('LOWER(name) = ?', [query.toLowerCase()])
-    .first();
-
-  return fallback ? { lat: fallback.lat, lng: fallback.lng } : null;
 }
 
 // Main geocode function
@@ -87,13 +73,8 @@ export async function geocode(query) {
   try {
     return await tryGoogle(biased, region);
   } catch (err) {
-    console.warn(err.message, '→ falling back to local DB');
+    console.warn(err.message, '→ no more fallbacks available');
   }
 
-  const fallback = await findBuildingInDB(normalized);
-  if (fallback) {
-    return fallback;
-  }
-
-  throw new Error('Unable to geocode location');
+  throw new Error('Unable to geocode location with available services');
 }
