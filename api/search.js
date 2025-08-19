@@ -52,66 +52,67 @@ module.exports = async function handler(req, res) {
 
       // Geospatial search with UNION for both business and house tables
       query = `
-        SELECT 
-          'business' AS source,
-          b.id,
-          b.type,
-          b.building_name_zh as name,
-          NULL as estate_name_zh,
-          b.floor,
-          b.unit,
-          b.area,
-          b.deal_price,
-          b.deal_date,
-          l.province,
-          l.city,
-          l.town,
-          l.street,
-          l.lat,
-          l.long,
-          ST_Distance(
+        SELECT * FROM (
+          SELECT 
+            'business' AS source,
+            b.id,
+            b.type,
+            b.building_name_zh as name,
+            NULL as estate_name_zh,
+            b.floor,
+            b.unit,
+            b.area,
+            b.deal_price,
+            b.deal_date,
+            l.province,
+            l.city,
+            l.town,
+            l.street,
+            l.lat,
+            l.long,
+            ST_Distance(
+              ST_SetSRID(ST_Point(l.long, l.lat), 4326)::geography,
+              ST_SetSRID(ST_Point($2, $1), 4326)::geography
+            ) AS distance
+          FROM business b
+          JOIN location_info l ON b.location_id = l.id
+          WHERE ST_DWithin(
             ST_SetSRID(ST_Point(l.long, l.lat), 4326)::geography,
-            ST_SetSRID(ST_Point($2, $1), 4326)::geography
-          ) AS distance
-        FROM business b
-        JOIN location_info l ON b.location_id = l.id
-        WHERE ST_DWithin(
-          ST_SetSRID(ST_Point(l.long, l.lat), 4326)::geography,
-          ST_SetSRID(ST_Point($2, $1), 4326)::geography,
-          $3
-        )
-        
-        UNION ALL
-        
-        SELECT 
-          'house' AS source,
-          h.id,
-          h.type,
-          h.estate_name_zh as name,
-          h.estate_name_zh,
-          h.floor,
-          h.unit,
-          h.area,
-          h.deal_price,
-          h.deal_date,
-          l.province,
-          l.city,
-          l.town,
-          l.street,
-          l.lat,
-          l.long,
-          ST_Distance(
+            ST_SetSRID(ST_Point($2, $1), 4326)::geography,
+            $3
+          )
+          
+          UNION ALL
+          
+          SELECT 
+            'house' AS source,
+            h.id,
+            h.type,
+            h.estate_name_zh as name,
+            h.estate_name_zh,
+            h.floor,
+            h.unit,
+            h.area,
+            h.deal_price,
+            h.deal_date,
+            l.province,
+            l.city,
+            l.town,
+            l.street,
+            l.lat,
+            l.long,
+            ST_Distance(
+              ST_SetSRID(ST_Point(l.long, l.lat), 4326)::geography,
+              ST_SetSRID(ST_Point($2, $1), 4326)::geography
+            ) AS distance
+          FROM house h
+          JOIN location_info l ON h.location_id = l.id
+          WHERE ST_DWithin(
             ST_SetSRID(ST_Point(l.long, l.lat), 4326)::geography,
-            ST_SetSRID(ST_Point($2, $1), 4326)::geography
-          ) AS distance
-        FROM house h
-        JOIN location_info l ON h.location_id = l.id
-        WHERE ST_DWithin(
-          ST_SetSRID(ST_Point(l.long, l.lat), 4326)::geography,
-          ST_SetSRID(ST_Point($2, $1), 4326)::geography,
-          $3
-        )
-        
+            ST_SetSRID(ST_Point($2, $1), 4326)::geography,
+            $3
+          )
+        ) AS combined_results
         ORDER BY distance
         LIMIT $4 OFFSET $5
       `;
@@ -120,48 +121,49 @@ module.exports = async function handler(req, res) {
     } else {
       // Simple search without geospatial filtering
       query = `
-        SELECT 
-          'business' as source,
-          b.id,
-          b.type,
-          b.building_name_zh as name,
-          NULL as estate_name_zh,
-          b.floor,
-          b.unit,
-          b.area,
-          b.deal_price,
-          b.deal_date,
-          l.province,
-          l.city,
-          l.town,
-          l.street,
-          l.lat,
-          l.long
-        FROM business b
-        JOIN location_info l ON b.location_id = l.id
-        
-        UNION ALL
-        
-        SELECT 
-          'house' as source,
-          h.id,
-          h.type,
-          h.estate_name_zh as name,
-          h.estate_name_zh,
-          h.floor,
-          h.unit,
-          h.area,
-          h.deal_price,
-          h.deal_date,
-          l.province,
-          l.city,
-          l.town,
-          l.street,
-          l.lat,
-          l.long
-        FROM house h
-        JOIN location_info l ON h.location_id = l.id
-        
+        SELECT * FROM (
+          SELECT 
+            'business' as source,
+            b.id,
+            b.type,
+            b.building_name_zh as name,
+            NULL as estate_name_zh,
+            b.floor,
+            b.unit,
+            b.area,
+            b.deal_price,
+            b.deal_date,
+            l.province,
+            l.city,
+            l.town,
+            l.street,
+            l.lat,
+            l.long
+          FROM business b
+          JOIN location_info l ON b.location_id = l.id
+          
+          UNION ALL
+          
+          SELECT 
+            'house' as source,
+            h.id,
+            h.type,
+            h.estate_name_zh as name,
+            h.estate_name_zh,
+            h.floor,
+            h.unit,
+            h.area,
+            h.deal_price,
+            h.deal_date,
+            l.province,
+            l.city,
+            l.town,
+            l.street,
+            l.lat,
+            l.long
+          FROM house h
+          JOIN location_info l ON h.location_id = l.id
+        ) AS combined_results
         ORDER BY deal_date DESC
         LIMIT $1 OFFSET $2
       `;
