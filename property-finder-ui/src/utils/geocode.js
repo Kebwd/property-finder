@@ -13,9 +13,10 @@ function detectRegion(query) {
 // Normalize estate-style input
 function normalizeEstateName(query) {
   return query
-    .replace(/\d+號/g, '')     // remove building numbers
+    .replace(/\d+號/g, '')     // remove building numbers like 19號
     .replace(/第?\d+座/g, '')   // remove block numbers
     .replace(/\d+樓/g, '')     // remove floor numbers
+    .replace(/\d+/g, '')       // remove any remaining numbers
     .trim();
 }
 
@@ -50,24 +51,6 @@ async function tryGoogle(query, region = 'HK') {
   return { lat: loc.lat, lng: loc.lng };
 }
 
-// Local database fallback
-async function findBuildingInDB(query) {
-  const result = await db('location_info')
-    .select('lat', 'lng')
-    .whereRaw('LOWER(building_name_zh) LIKE ?', [`%${query.toLowerCase()}%`])
-    .first();
-
-  if (result) return { lat: result.lat, lng: result.lng };
-
-  // Fallback to estate name if needed
-  const fallback = await db('location_info')
-    .select('lat', 'lng')
-    .whereRaw('LOWER(name) = ?', [query.toLowerCase()])
-    .first();
-
-  return fallback ? { lat: fallback.lat, lng: fallback.lng } : null;
-}
-
 // Main geocode function
 export async function geocode(query) {
   if (!query.trim()) {
@@ -87,12 +70,21 @@ export async function geocode(query) {
   try {
     return await tryGoogle(biased, region);
   } catch (err) {
-    console.warn(err.message, '→ falling back to local DB');
+    console.warn(err.message, '→ falling back to normalized query');
   }
 
-  const fallback = await findBuildingInDB(normalized);
-  if (fallback) {
-    return fallback;
+  // If the biased query failed, try the normalized query directly
+  try {
+    return await tryNominatim(normalized);
+  } catch (err) {
+    console.warn(err.message, '→ trying original query');
+  }
+
+  // Last attempt with original query
+  try {
+    return await tryNominatim(query);
+  } catch (err) {
+    console.warn(err.message);
   }
 
   throw new Error('Unable to geocode location');
