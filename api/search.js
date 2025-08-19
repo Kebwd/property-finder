@@ -1,9 +1,7 @@
 const { Pool } = require('pg');
 
 const pool = new Pool({
-  connectionString: process.env.SUPABASE_URL ? 
-    `postgresql://postgres:${process.env.SUPABASE_SERVICE_ROLE_KEY}@${process.env.SUPABASE_URL.replace('https://', '').replace('.supabase.co', '')}.supabase.co:5432/postgres` :
-    process.env.DATABASE_URL,
+  connectionString: process.env.DATABASE_URL,
   ssl: { rejectUnauthorized: false }
 });
 
@@ -33,6 +31,8 @@ module.exports = async function handler(req, res) {
       lng,
       radius = 5000
     } = req.query;
+
+    console.log('Search API called with params:', req.query);
 
     const offset = (parseInt(page) - 1) * parseInt(limit);
     let query = '';
@@ -167,6 +167,8 @@ module.exports = async function handler(req, res) {
     }
 
     const result = await pool.query(query, queryParams);
+    
+    console.log('Search query executed, rows returned:', result.rows.length);
     
     res.status(200).json({
       success: true,
