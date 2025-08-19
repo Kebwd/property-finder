@@ -29,7 +29,9 @@ module.exports = async function handler(req, res) {
       limit = 20,
       lat,
       lng,
-      radius = 5000
+      radius = 5000,
+      specificType,
+      dateRange
     } = req.query;
 
     console.log('Search API called with params:', req.query);
@@ -46,6 +48,26 @@ module.exports = async function handler(req, res) {
 
       if (isNaN(searchLat) || isNaN(searchLng)) {
         return res.status(400).json({ error: 'Invalid latitude or longitude' });
+      }
+
+      // Build WHERE clauses for type filtering
+      let businessWhere = `ST_DWithin(
+        ST_SetSRID(ST_Point(l.long, l.lat), 4326)::geography,
+        ST_SetSRID(ST_Point($2, $1), 4326)::geography,
+        $3
+      )`;
+      
+      let houseWhere = `ST_DWithin(
+        ST_SetSRID(ST_Point(l.long, l.lat), 4326)::geography,
+        ST_SetSRID(ST_Point($2, $1), 4326)::geography,
+        $3
+      )`;
+
+      let paramCount = 3;
+      if (specificType) {
+        paramCount++;
+        businessWhere += ` AND b.type = $${paramCount}`;
+        houseWhere += ` AND h.type = $${paramCount}`;
       }
 
       // Geospatial search with UNION for both business and house tables
@@ -73,11 +95,7 @@ module.exports = async function handler(req, res) {
           ) AS distance
         FROM business b
         JOIN location_info l ON b.location_id = l.id
-        WHERE ST_DWithin(
-          ST_SetSRID(ST_Point(l.long, l.lat), 4326)::geography,
-          ST_SetSRID(ST_Point($2, $1), 4326)::geography,
-          $3
-        )
+        WHERE ${businessWhere}
         
         UNION ALL
         
@@ -104,17 +122,17 @@ module.exports = async function handler(req, res) {
           ) AS distance
         FROM house h
         JOIN location_info l ON h.location_id = l.id
-        WHERE ST_DWithin(
-          ST_SetSRID(ST_Point(l.long, l.lat), 4326)::geography,
-          ST_SetSRID(ST_Point($2, $1), 4326)::geography,
-          $3
-        )
+        WHERE ${houseWhere}
         
         ORDER BY distance
-        LIMIT $4 OFFSET $5
+        LIMIT $${paramCount + 1} OFFSET $${paramCount + 2}
       `;
 
-      queryParams = [searchLat, searchLng, searchRadius, parseInt(limit), offset];
+      queryParams = [searchLat, searchLng, searchRadius];
+      if (specificType) {
+        queryParams.push(specificType);
+      }
+      queryParams.push(parseInt(limit), offset);
     } else {
       // Simple search without geospatial filtering
       query = `
