@@ -168,6 +168,10 @@ export default function App() {
                   <option value="180">最近半年</option>
                   <option value="365">最近一年</option>
                   <option value="730">最近两年</option>
+                  <option value="1095">最近三年</option>
+                  <option value="1825">最近五年</option>
+                  <option value="3650">最近十年</option>
+                  <option value="7300">最近二十年</option>
                 </select>
               </div>
             </div>

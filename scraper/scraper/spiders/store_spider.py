@@ -102,7 +102,7 @@ class StoreSpider(CrawlSpider):
 
         # load your site configs using absolute paths
         config_dir = Path(__file__).parents[2] / "config"
-        self.configs  = load_config(str(config_dir / "hk_store_fixed.yaml"))
+        self.configs  = load_config(str(config_dir / "hk_store.yaml"))
         self.configs += load_config(str(config_dir / "cn_store.yaml"))
 
         # load type mappings
@@ -298,10 +298,12 @@ class StoreSpider(CrawlSpider):
         self.logger.debug(f"Trying xpaths for 'type': {cfg['xpaths'].get('type')}")
         raw_type = extract_first(response, cfg["xpaths"]["type"], default="").strip()
 
-        rows = response.xpath("//tbody/tr")
+        rows = response.xpath(cfg["xpaths"].get("rows", ["//tbody/tr"])[0])
         if not rows:
             self.logger.warning("⚠️ zero rows in %s", response.url)
             return
+
+        self.logger.info(f"📊 Found {len(rows)} rows using xpath: {cfg['xpaths'].get('rows', ['//tbody/tr'])[0]}")
 
         for row in rows:
             # Extract type from each row individually
@@ -325,6 +327,13 @@ class StoreSpider(CrawlSpider):
             # Create unique deal ID for change detection
             deal_id = self.create_deal_id(item)
             self.current_deals.add(deal_id)
+            
+            # Check if this deal is from today (only in daily mode)
+            if self.monitoring_mode == 'daily':
+                deal_date = item.get('deal_date', '')
+                if not self.is_today_deal(deal_date):
+                    self.logger.info(f"🛑 STOPPING: Found deal from {deal_date} (not today), stopping crawl")
+                    return  # Stop processing when we hit a non-today deal
             
             # Check if this is a newly posted deal
             if self.is_new_deal(deal_id):

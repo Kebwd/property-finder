@@ -17,6 +17,7 @@ config:
       deal_price: deal_price
       developer: developer
     xpaths:
+      rows: ["//tbody/tr[position() >= 1]"]  # Start from tr[1] and continue for all rows
       type: ["./td[2]//text()"]
       building_name_zh: ["./td[3]//text()"]
       floor: ["./td[4]//text()"]
@@ -30,9 +31,9 @@ config:
   - zone: "Hong Kong"
     type: store
     start_urls:
-      - "https://oir.centanet.com/transaction/search/?daterang=01%2F07%2F2025-01%2F08%2F2025&posttype=S"
+      - "https://oir.centanet.com/transaction/search/?posttype=S&usagenames=Office,Industrial,Retail"
     fields:
-      type: type
+      type: type;
       building_name_zh: propertyNameCn
       floor: floor
       unit: unit
@@ -41,8 +42,9 @@ config:
       deal_price: deal_price
       developer: developer
     xpaths:
+      rows: ["//tbody/tr[position() >= 1]"]  # Start from tr[1] and continue for all rows
       type: ["./td[2]//text()"]
-      building_name_zh: ["./td[4]/div[1]//text()"]
+      building_name_zh: ["./td[4]//text()"]
       floor: ["./td[5]//text()"]
       unit: ["./td[6]//text()"]
       area: ["./td[7]//text()"]

@@ -6,6 +6,7 @@ store_types:
   辦公室: ['office']
   廠房: ['factory']
   倉庫: ['warehouse']
+  地段: ['land']
 
 house_types:
   住宅單位: ['residential']
