@@ -15,7 +15,7 @@ export default function App() {
   const [page, setPage] = useState(1);
   const [error,  setError]  = useState(null);
   const [filterType, setFilterType] = useState('');
-  const types = ['全部', '寫字樓', '工商', '商舖', '車位', '辦公室','住宅單位','別墅','公寓','廠房','倉庫','土地'];
+  const types = ['全部', '寫字樓', '工商', '商舖', '車位', '辦公室','住宅單位','別墅','公寓','廠房','倉庫','土地','地段'];
   const storetypes = ['寫字樓', '工商', '商舖', '車位', '辦公室','廠房','倉庫']
   const housetypes = ['住宅單位','別墅','公寓','土地']
   function findType(input) {
