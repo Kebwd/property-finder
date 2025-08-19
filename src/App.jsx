@@ -71,7 +71,7 @@ export default function App() {
       lng:      coords.lng,
       radius:   '5000',
       page:     '1',
-      perPage:  '10'
+      limit:    '10'
     });
     if (filterType) {
       params.append('type', filterType);
@@ -79,28 +79,33 @@ export default function App() {
     if (filterdate){
       params.append('dateRange',filterdate);
     }
-    const type = findType(filterType);
-    let url;
-    if (type === '') {
-      // Show all results
-      url = `${API_URL}/api/search/all?${params.toString()}`;
-    } else {
-      // Redirect to specific type
-      url = `${API_URL}/api/${type}/search?${params.toString()}`;
-    }
+    
+    // Always use the same search endpoint
+    const url = `${API_URL}/api/search?${params.toString()}`;
     console.log('Sending request to:', url);
 
     // 3) Fetch and set the results
     try {
       console.log('Search Params:', { query, filterType, filterdate });
+      console.log('Making fetch request to:', url);
       const res = await fetch(url);
+      console.log('Response status:', res.status);
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
+        console.error('Response error:', body);
         throw new Error(body.error || `Server returned ${res.status}`);
       }
       const data = await res.json();
-      setStores(data);
+      console.log('Response data:', data);
+      if (data.success && data.data) {
+        console.log('Setting stores with data.data:', data.data.length, 'items');
+        setStores(data.data);
+      } else {
+        console.log('Setting stores with fallback:', data.data || data || []);
+        setStores(data.data || data || []);
+      }
       } catch (err) {
+        console.error('Fetch error:', err);
         setError(err.message);
         setStores([]);
       } finally {

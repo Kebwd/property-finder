@@ -1,11 +1,17 @@
 // Auto-detect API URL based on current domain
 const getApiUrl = () => {
+  // In development, use the environment variable for API URL
+  if (import.meta.env.VITE_API_URL) {
+    return import.meta.env.VITE_API_URL;
+  }
+  
   if (typeof window !== 'undefined') {
     // Use the same domain as the frontend for API calls
     return window.location.origin;
   }
-  // Fallback for server-side rendering - use the latest working deployment
-  return import.meta.env.VITE_API_URL || 'https://property-finder-735t2f2g3-kens-projects-f9f968b0.vercel.app';
+  
+  // Fallback for server-side rendering
+  return 'https://property-finder-vert-beta.vercel.app';
 };
 
 export const API_URL = getApiUrl();

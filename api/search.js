@@ -25,6 +25,8 @@ module.exports = async function handler(req, res) {
   }
 
   try {
+    console.log('Search API called with query params:', req.query);
+    
     const { 
       type = 'all', 
       page = 1, 
@@ -33,6 +35,8 @@ module.exports = async function handler(req, res) {
       lng,
       radius = 5000
     } = req.query;
+
+    console.log('Parsed params:', { type, page, limit, lat, lng, radius });
 
     const offset = (parseInt(page) - 1) * parseInt(limit);
     let query = '';
@@ -181,9 +185,12 @@ module.exports = async function handler(req, res) {
 
   } catch (error) {
     console.error('Search API error:', error);
+    console.error('Error stack:', error.stack);
+    console.error('Query params:', req.query);
     res.status(500).json({
       success: false,
-      error: error.message,
+      error: error.message || 'Internal server error',
+      details: error.stack,
       timestamp: new Date().toISOString()
     });
   }
