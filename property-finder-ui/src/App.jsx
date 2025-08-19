@@ -86,7 +86,7 @@ export default function App() {
       lng:      coords.lng,
       radius:   '5000',
       page:     '1',
-      limit:    '10'
+      perPage:  '10'
     });
     if (filterType && filterType !== '全部') {
       // Use the mapped type name for database query
