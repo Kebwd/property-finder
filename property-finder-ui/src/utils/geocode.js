@@ -38,7 +38,7 @@ async function tryNominatim(query) {
 
 // Try Google Maps geocoding
 async function tryGoogle(query, region = 'HK') {
-  const key = process.env.GEOCODING_API_KEY;
+  const key = import.meta.env.VITE_GEOCODING_API_KEY;
   const url = `${GOOGLE_BASE}?address=${encodeURIComponent(query)}&components=country:${region}&key=${key}`;
 
   const res = await fetch(url);

@@ -86,7 +86,7 @@ export default function App() {
       lng:      coords.lng,
       radius:   '5000',
       page:     '1',
-      perPage:  '10'
+      limit:    '10'
     });
     if (filterType && filterType !== '全部') {
       // Use the mapped type name for database query
@@ -99,7 +99,7 @@ export default function App() {
     }
     const type = findType(filterType);
     // Always use the same endpoint for all searches
-    const url = `${import.meta.env.VITE_API_URL}/api/search/all?${params.toString()}`;
+    const url = `${import.meta.env.VITE_API_URL}/api/search?${params.toString()}`;
     console.log('Sending request to:', url);
 
     // 3) Fetch and set the results
