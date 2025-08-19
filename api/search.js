@@ -201,13 +201,9 @@ module.exports = async function handler(req, res) {
 
   } catch (error) {
     console.error('Search API error:', error);
-    console.error('Error stack:', error.stack);
-    console.error('Error name:', error.name);
-    console.error('Error message:', error.message);
     res.status(500).json({
       success: false,
-      error: error.message || 'Unknown error occurred',
-      errorName: error.name,
+      error: error.message,
       timestamp: new Date().toISOString()
     });
   }
