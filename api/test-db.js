@@ -23,13 +23,26 @@ module.exports = async function handler(req, res) {
   }
 
   try {
-    // Simple database test
-    const result = await pool.query('SELECT COUNT(*) as total FROM business LIMIT 1');
+    // Test basic connection
+    const basicTest = await pool.query('SELECT 1 as test');
+    
+    // Test business table
+    const businessTest = await pool.query('SELECT COUNT(*) as total FROM business LIMIT 1');
+    
+    // Test location_info table
+    const locationTest = await pool.query('SELECT COUNT(*) as total FROM location_info LIMIT 1');
+    
+    // Test PostGIS extension
+    const postgisTest = await pool.query("SELECT PostGIS_version() as version");
     
     res.status(200).json({
       success: true,
-      message: 'Database connection working',
-      businessCount: result.rows[0].total,
+      tests: {
+        basic: basicTest.rows[0],
+        business: businessTest.rows[0],
+        location: locationTest.rows[0],
+        postgis: postgisTest.rows[0]
+      },
       timestamp: new Date().toISOString()
     });
 
@@ -38,6 +51,7 @@ module.exports = async function handler(req, res) {
     res.status(500).json({
       success: false,
       error: error.message,
+      stack: error.stack,
       timestamp: new Date().toISOString()
     });
   }
