@@ -18,13 +18,26 @@ from utils.config_loader import load_config
 
 def split_address_info(text):
     """
-    Split combined address info like '大鴻輝(荃灣)中心 商場' or '昌明大廈 地舖'
+    Split combined address info like:
+    - '大鴻輝(荃灣)中心 商場' or '昌明大廈 地舖'
+    - '北角 澤盈中心 中層 1室' (midlandici format: district + building + floor + unit)
     Returns (building_name, floor, unit)
     """
     if not text:
         return "", "", ""
     
     text = text.strip()
+    
+    # Special handling for midlandici format: "district building floor unit"
+    # Pattern: "北角 澤盈中心 中層 1室" → district="北角", building="澤盈中心", floor="中層", unit="1室"
+    midlandici_pattern = r'^([^第]*?)\s+([^第]*?)\s+(地下|地舖|閣樓|天台|頂層|低層|中層|高層|上層|\d+樓|\d+層)\s+(\d+室|\d+號|\d+[A-Z]室?|[A-Z]\d*室?)$'
+    midlandici_match = re.match(midlandici_pattern, text)
+    if midlandici_match:
+        district = midlandici_match.group(1).strip()
+        building = midlandici_match.group(2).strip()
+        floor = midlandici_match.group(3).strip()
+        unit = midlandici_match.group(4).strip()
+        return building, floor, unit
     
     # Common Hong Kong floor patterns
     floor_patterns = [
@@ -70,7 +83,7 @@ def split_address_info(text):
     return building_name, floor, unit
 
 
-def extract_first(response, xpaths, default=None):
+def extract_first(response, xpaths, default=None, use_innerHTML=False):
     """
     Try each xp in the list (or single string), skip invalid or empty expressions,
     and return the first non-empty result.
@@ -92,13 +105,50 @@ def extract_first(response, xpaths, default=None):
             print(f"⚠️  skipping invalid xpath fragment: {xp!r}")
             continue
         try:
+            # If innerHTML mode is requested, try innerHTML extraction first
+            if use_innerHTML:
+                # Get the element's innerHTML-like content
+                element = response.xpath(xp.replace('/text()', '') if '/text()' in xp else xp).get()
+                if element:
+                    # Extract text content from HTML string using regex
+                    import re
+                    # Try multiple patterns for extracting text content
+                    patterns = [
+                        r'>([^<]+)<',  # Text between tags
+                        r'(\d{2}/\d{2}/\d{4})',  # Date pattern
+                        r'\$[\d,]+萬?'  # Price pattern  
+                    ]
+                    for pattern in patterns:
+                        match = re.search(pattern, element)
+                        if match:
+                            extracted_text = match.group(1) if pattern == r'>([^<]+)<' else match.group(0)
+                            if extracted_text and extracted_text.strip():
+                                return extracted_text.strip()
+            
+            # Fallback to normal text extraction
             val = response.xpath(xp).get()
+            if val and val.strip():
+                return val.strip()
+            
+            # For midlandici elements with empty text but innerHTML content,
+            # try extracting from element attributes or innerHTML-like behavior
+            if "/span[@class='transaction-date']" in xp or "/span[@class='price-total-value']" in xp:
+                # Try to get the element and extract its string content
+                element = response.xpath(xp.replace('/text()', '') if '/text()' in xp else xp).get()
+                if element:
+                    # Extract text content from HTML string
+                    import re
+                    text_match = re.search(r'>([^<]+)<', element)
+                    if text_match:
+                        extracted_text = text_match.group(1).strip()
+                        if extracted_text:
+                            return extracted_text
+                            
         except Exception as e:
             # malformed XPath—skip it, but let me know
             print(f"⚠️  malformed xpath {xp!r}, skipping: {e}")
             continue
-        if val:
-            return val.strip()
+            
     return default
 
 
@@ -278,13 +328,20 @@ class StoreSpider(CrawlSpider):
 
     def has_too_many_null_columns(self, item):
         """
-        Check if item has more than 1 null/empty columns in critical fields.
+        Check if item has more than 2 null/empty columns in critical fields.
         Returns True if item should be filtered out.
         Note: floor and unit are allowed to be empty.
+        CRITICAL: building_name_zh must never be null.
         """
-        # Define critical fields to check (floor and unit are allowed to be empty)
+        # Building name is absolutely required - reject immediately if missing
+        building_name = item.get('building_name_zh')
+        if not building_name or str(building_name).strip() in ['', '--', 'None', 'null']:
+            self.logger.debug(f"🚫 CRITICAL: Missing building name - rejecting item")
+            return True
+        
+        # Define other important fields to check (floor and unit are allowed to be empty)
         important_fields = [
-            'building_name_zh', 'area', 'deal_date', 'deal_price'
+            'area', 'deal_date', 'deal_price'
         ]
         
         null_count = 0
@@ -294,10 +351,10 @@ class StoreSpider(CrawlSpider):
             if not value or str(value).strip() in ['', '--', 'None', 'null']:
                 null_count += 1
         
-        self.logger.debug(f"📊 Data quality check: {null_count}/{len(important_fields)} null columns in {item.get('building_name_zh', 'N/A')}")
+        self.logger.debug(f"📊 Data quality check: {null_count}/{len(important_fields)} null columns in {building_name}")
         
-        # Return True if more than 1 column is null (item should be filtered out)
-        return null_count > 1
+        # Return True if ALL other columns are null (item should be filtered out) - relaxed validation
+        return null_count >= 3
 
     def start_requests(self):
         for cfg in self.configs:
@@ -389,7 +446,15 @@ class StoreSpider(CrawlSpider):
             
             item = {"zone": cfg["zone"], "type_raw": raw_type, "type": normalized}
 
+            # Debug field mapping for midlandici
+            if "midlandici.com" in response.url and row_index == 0:
+                self.logger.debug(f"🔧 Midlandici fields mapping: {cfg['fields']}")
+                self.logger.debug(f"🔧 Available xpaths: {list(cfg['xpaths'].keys())}")
+
             for field, key in cfg["fields"].items():
+                # Debug each field being processed for midlandici
+                if "midlandici.com" in response.url and row_index == 0:
+                    self.logger.debug(f"🔄 Processing field: {field} -> {key}")
                 if key == "type":
                     # For carpark type, use static assignment
                     if cfg.get("type") == "carpark":
@@ -402,7 +467,32 @@ class StoreSpider(CrawlSpider):
                 if not xp:
                     item[field] = None
                 else:
-                    extracted_value = extract_first(row, xp)
+                    # Special handling for midlandici date and price extraction
+                    is_midlandici = "midlandici.com" in response.url
+                    if is_midlandici and field in ['tx_date', 'sell']:
+                        self.logger.debug(f"🔍 Midlandici special extraction for field: {field} (key: {key})")
+                        # For midlandici, try innerHTML extraction first
+                        if field == 'tx_date':
+                            # Use simplified XPath and try innerHTML extraction
+                            date_xpath = ["./td[1]//span[@class='transaction-date']"]
+                            extracted_value = extract_first(row, date_xpath, use_innerHTML=True)
+                            self.logger.debug(f"🔍 DEBUG: Midlandici date extraction for {field}: {extracted_value}")
+                        elif field == 'sell':
+                            # Use simplified XPath and try innerHTML extraction  
+                            price_xpath = ["./td[6]//span[@class='price-total-value']"]
+                            extracted_value = extract_first(row, price_xpath, use_innerHTML=True)
+                            self.logger.debug(f"🔍 DEBUG: Midlandici price extraction for {field}: {extracted_value}")
+                        
+                        if extracted_value:
+                            item[field] = extracted_value
+                            continue
+                        else:
+                            extracted_value = extract_first(row, xp)
+                    else:
+                        # Add debug for all midlandici fields to understand flow
+                        if is_midlandici:
+                            self.logger.debug(f"📝 Midlandici regular extraction for {field} (key: {key}) with xpath: {xp}")
+                        extracted_value = extract_first(row, xp)
                     item[field] = extracted_value
 
             # Handle combined address fields (building name + floor + unit in one field)
@@ -425,6 +515,15 @@ class StoreSpider(CrawlSpider):
 
             # Handle carpark-specific data processing
             if cfg.get("type") == "carpark":
+                # Ensure building name is properly extracted and cleaned
+                building_name = item.get('building_name_zh')
+                if building_name:
+                    building_name = building_name.strip()
+                    item['building_name_zh'] = building_name
+                else:
+                    # Log missing building name for debugging
+                    self.logger.warning(f"⚠️ Carpark missing building name - row data: {dict(item)}")
+                
                 # Process combined floor/unit (e.g., "2/P16" → floor="2", unit="P16")
                 floor_unit_combined = item.get('floor_unit_combined', '')
                 if floor_unit_combined and '/' in floor_unit_combined:
