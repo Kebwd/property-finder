@@ -46,3 +46,24 @@ config:
       area: ["./td[7]//text()"]
       deal_date: ["./td[1]//text()"]
       deal_price: ["./td[8]//text()"]
+
+  - zone: "Hong Kong"
+    type: carpark
+    start_urls:
+      - "https://carparkhk.com/transaction-records.php?area=&years=&month=#gsc.tab=0"
+    fields:
+      type: type
+      building_name_zh: propertyNameCn
+      floor: floor_unit_combined  # Will be split in processing
+      unit: floor_unit_combined   # Will be split in processing  
+      area: area
+      deal_date: deal_date
+      deal_price: deal_price_millions  # Will be converted from millions
+    xpaths:
+      rows: ["//tr[position() > 1]"]  # Skip header row, no tbody
+      type: ["./td[1]//text()"]  # We'll override this in spider logic
+      propertyNameCn: ["./td[2]/a/text()", "./td[2]//text()"]  # Building name in td[2], inside link or all text
+      floor_unit_combined: ["./td[3]//text()"]  # Combined floor/unit like "2/P16"
+      deal_price_millions: ["./td[4]//text()"]  # Price in millions like "0.970"
+      deal_date: ["./td[5]//text()"]  # Date in td[5]
+      area: ["./td[6]//text()"]  # Area might be in td[6] if exists

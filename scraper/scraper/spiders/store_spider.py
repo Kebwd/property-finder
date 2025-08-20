@@ -391,7 +391,11 @@ class StoreSpider(CrawlSpider):
 
             for field, key in cfg["fields"].items():
                 if key == "type":
-                    item[field] = normalized
+                    # For carpark type, use static assignment
+                    if cfg.get("type") == "carpark":
+                        item[field] = "carpark"
+                    else:
+                        item[field] = normalized
                     continue
 
                 xp = cfg["xpaths"].get(key)
@@ -418,6 +422,28 @@ class StoreSpider(CrawlSpider):
                     item['unit'] = unit_info
                     
                 self.logger.debug(f"🔀 Split address: '{building_name_raw}' → Building: '{building_name}', Floor: '{floor_info}', Unit: '{unit_info}'")
+
+            # Handle carpark-specific data processing
+            if cfg.get("type") == "carpark":
+                # Process combined floor/unit (e.g., "2/P16" → floor="2", unit="P16")
+                floor_unit_combined = item.get('floor_unit_combined', '')
+                if floor_unit_combined and '/' in floor_unit_combined:
+                    parts = floor_unit_combined.split('/', 1)
+                    item['floor'] = parts[0].strip()
+                    item['unit'] = parts[1].strip()
+                    self.logger.debug(f"🚗 Split carpark floor/unit: '{floor_unit_combined}' → Floor: '{parts[0].strip()}', Unit: '{parts[1].strip()}'")
+                
+                # Convert price from millions to actual amount (e.g., "0.970" → "970000")
+                price_millions = item.get('deal_price_millions', '')
+                if price_millions:
+                    try:
+                        price_float = float(price_millions)
+                        actual_price = int(price_float * 1000000)  # Convert millions to actual amount
+                        item['deal_price'] = str(actual_price)
+                        self.logger.debug(f"💰 Converted carpark price: '{price_millions}' million → {actual_price}")
+                    except (ValueError, TypeError):
+                        self.logger.warning(f"⚠️ Failed to convert carpark price: '{price_millions}'")
+                        item['deal_price'] = price_millions  # Keep original if conversion fails
 
             # Create unique deal ID for change detection
             deal_id = self.create_deal_id(item)
