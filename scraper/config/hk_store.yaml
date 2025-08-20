@@ -67,3 +67,25 @@ config:
       deal_price_millions: ["./td[4]//text()"]  # Price in millions like "0.970"
       deal_date: ["./td[5]//text()"]  # Date in td[5]
       area: ["./td[6]//text()"]  # Area might be in td[6] if exists
+
+  - zone: "Hong Kong"
+    type: store
+    start_urls:
+      - "https://www.property.hk/tran/t3/"
+    fields:
+      type: type
+      building_name_zh: propertyNameCn
+      floor: floor
+      unit: unit
+      area: area
+      deal_date: deal_date
+      deal_price: deal_price_millions
+    xpaths:
+      rows: ["//tbody/tr[position() >= 1]"]  # Start from tr[1] and continue for all rows
+      type: ["商舖"]
+      propertyNameCn: ["./td[3]/a/text()", "./td[3]//text()[normalize-space()]", "./td[3]//text()"]  # Building name in td[4] link, fallback to district in td[3]
+      floor: [""]
+      unit: ["./td[4]//text()"]
+      area: ["./td[5]//text()"]
+      deal_date: ["./td[2]//text()"]
+      deal_price_millions: ["./td[6]//text()"]
