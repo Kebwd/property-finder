@@ -4,50 +4,45 @@ key_mapping:
 config:
   - zone: "Hong Kong"
     type: store
-    json_url_template: "https://www.midlandici.com.hk/ics/property/transaction/json?tx_type%5B%5D=S&ics_type=&lang=zh-hk&page_size=20&cursor={cursor}&order=tx_date-desc"
     start_urls:
       - "https://www.midlandici.com.hk/ics/property/transaction/sold?lang=zh-hk"
     fields:
       type: type
       building_name_zh: building_name_zh
       floor: floor
-      unit: unit
+      unit: flat
       area: area
       deal_date: tx_date
-      deal_price: deal_price
-      developer: developer
+      deal_price: sell
     xpaths:
       rows: ["//tbody/tr[position() >= 1]"]  # Start from tr[1] and continue for all rows
       type: ["./td[2]//text()"]
-      building_name_zh: ["./td[3]//text()"]
-      floor: ["./td[4]//text()"]
-      unit: ["./td[5]//text()"]
+      building_name_zh: ["./td[4]/div[1]//text()"]  # Building name is in td[4]/div[1]
+      floor: ["./td[5]//text()"]  # Floor moved to td[5]
+      unit: ["./td[6]//text()"]   # Unit moved to td[6]
       deal_date: ["./td[1]//text()"]
       area: ["./td[7]//text()"]
       deal_price: ["./td[8]//text()"]
-      developer: ["./td[9]//text()"]
 
 
   - zone: "Hong Kong"
     type: store
     start_urls:
-      - "https://oir.centanet.com/transaction/search/?posttype=S&usagenames=Office,Industrial,Retail"
+      - "https://oir.centanet.com/transaction/sale/"
     fields:
-      type: type;
+      type: type
       building_name_zh: propertyNameCn
       floor: floor
       unit: unit
       area: area
       deal_date: deal_date
       deal_price: deal_price
-      developer: developer
     xpaths:
       rows: ["//tbody/tr[position() >= 1]"]  # Start from tr[1] and continue for all rows
       type: ["./td[2]//text()"]
-      building_name_zh: ["./td[4]//text()"]
+      propertyNameCn: ["./td[4]/div[1]//text()", "./td[4]//text()", "./td[3]//text()"]  # Building name first, then fallback to district
       floor: ["./td[5]//text()"]
       unit: ["./td[6]//text()"]
       area: ["./td[7]//text()"]
       deal_date: ["./td[1]//text()"]
       deal_price: ["./td[8]//text()"]
-      developer: ["./td[9]//text()"]

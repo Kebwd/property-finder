@@ -1,7 +1,7 @@
 store_types:
-  寫字樓: ['office']
-  工商: ['commercial']
-  商舖: ['shop']
+  寫字樓: ['c']
+  工商: ['i']
+  商舖: ['s','shop']
   車位: ['parking']
   辦公室: ['office']
   廠房: ['factory']

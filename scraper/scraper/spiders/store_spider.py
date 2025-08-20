@@ -16,6 +16,60 @@ from utils.config_loader import load_config
 
 
 
+def split_address_info(text):
+    """
+    Split combined address info like '大鴻輝(荃灣)中心 商場' or '昌明大廈 地舖'
+    Returns (building_name, floor, unit)
+    """
+    if not text:
+        return "", "", ""
+    
+    text = text.strip()
+    
+    # Common Hong Kong floor patterns
+    floor_patterns = [
+        r'(地下|地舖|閣樓|天台|頂層)',  # Special floors
+        r'(低層|中層|高層|上層)',      # General floor ranges  
+        r'(商場|商舖|寫字樓|工商)',    # Property types that act as floor info
+        r'(\d+樓|\d+層)',            # Specific floors like 15樓, 3層
+        r'([A-Z]/F|G/F|U[A-Z]/F)',   # Floor abbreviations like LG/F, G/F, UG/F
+    ]
+    
+    # Common unit patterns
+    unit_patterns = [
+        r'(\d+室)',                  # 1室, 2室
+        r'(\d+號)',                  # 1號, 2號  
+        r'(\d+[A-Z]室?)',           # 1A室, 2B
+        r'([A-Z]\d*室?)',           # A室, B1室
+        r'(\d+[A-Z]-\d+[A-Z])',     # 1A-2B (unit ranges)
+    ]
+    
+    floor = ""
+    unit = ""
+    building_name = text
+    
+    # Extract floor information
+    for pattern in floor_patterns:
+        match = re.search(pattern, text)
+        if match:
+            floor = match.group(1)
+            building_name = building_name.replace(floor, "")
+            break
+    
+    # Extract unit information  
+    for pattern in unit_patterns:
+        match = re.search(pattern, text)
+        if match:
+            unit = match.group(1)
+            building_name = building_name.replace(unit, "")
+            break
+    
+    # Clean building name (remove extra whitespace)
+    building_name = re.sub(r'\s+', ' ', building_name).strip()
+    
+    return building_name, floor, unit
+
+
 def extract_first(response, xpaths, default=None):
     """
     Try each xp in the list (or single string), skip invalid or empty expressions,
@@ -222,6 +276,29 @@ class StoreSpider(CrawlSpider):
         # Handle HTML format: "DD/MM/YYYY" - direct comparison
         return deal_date_text == self.today_date
 
+    def has_too_many_null_columns(self, item):
+        """
+        Check if item has more than 1 null/empty columns in critical fields.
+        Returns True if item should be filtered out.
+        Note: floor and unit are allowed to be empty.
+        """
+        # Define critical fields to check (floor and unit are allowed to be empty)
+        important_fields = [
+            'building_name_zh', 'area', 'deal_date', 'deal_price'
+        ]
+        
+        null_count = 0
+        for field in important_fields:
+            value = item.get(field)
+            # Consider None, empty string, '--', or whitespace-only as null
+            if not value or str(value).strip() in ['', '--', 'None', 'null']:
+                null_count += 1
+        
+        self.logger.debug(f"📊 Data quality check: {null_count}/{len(important_fields)} null columns in {item.get('building_name_zh', 'N/A')}")
+        
+        # Return True if more than 1 column is null (item should be filtered out)
+        return null_count > 1
+
     def start_requests(self):
         for cfg in self.configs:
             json_tmpl = cfg.get("json_url_template")
@@ -305,7 +382,7 @@ class StoreSpider(CrawlSpider):
 
         self.logger.info(f"📊 Found {len(rows)} rows using xpath: {cfg['xpaths'].get('rows', ['//tbody/tr'])[0]}")
 
-        for row in rows:
+        for row_index, row in enumerate(rows):
             # Extract type from each row individually
             raw_type = extract_first(row, cfg["xpaths"].get("type", []), default="").strip()
             normalized = classify_type({"tx_type": raw_type}, cfg["type"], self.type_mapping)
@@ -324,6 +401,24 @@ class StoreSpider(CrawlSpider):
                     extracted_value = extract_first(row, xp)
                     item[field] = extracted_value
 
+            # Handle combined address fields (building name + floor + unit in one field)
+            # Check if we have a combined address situation
+            building_name_raw = item.get('building_name_zh', '')
+            if building_name_raw and any(keyword in building_name_raw for keyword in ['地舖', '商場', '中層', '低層', '高層', '樓', '層']):
+                # Split the combined address
+                building_name, floor_info, unit_info = split_address_info(building_name_raw)
+                
+                # Update the item with split information
+                item['building_name_zh'] = building_name if building_name else building_name_raw
+                
+                # Only override floor/unit if they're currently empty and we found something
+                if not item.get('floor') and floor_info:
+                    item['floor'] = floor_info
+                if not item.get('unit') and unit_info:
+                    item['unit'] = unit_info
+                    
+                self.logger.debug(f"🔀 Split address: '{building_name_raw}' → Building: '{building_name}', Floor: '{floor_info}', Unit: '{unit_info}'")
+
             # Create unique deal ID for change detection
             deal_id = self.create_deal_id(item)
             self.current_deals.add(deal_id)
@@ -337,6 +432,11 @@ class StoreSpider(CrawlSpider):
             
             # Check if this is a newly posted deal
             if self.is_new_deal(deal_id):
+                # Validate data quality - filter out items with more than 2 null columns
+                if self.has_too_many_null_columns(item):
+                    self.logger.warning(f"🚫 REJECTED: Too many null columns in deal: {item.get('building_name_zh', 'N/A')} - {raw_type}")
+                    continue
+                
                 self.logger.info(f"🆕 NEW DEAL: {item.get('building_name_zh', 'N/A')} - {raw_type} - {item.get('deal_price', 'N/A')}")
                 self.new_deals_count += 1
                 self.item_count += 1
@@ -361,6 +461,11 @@ class StoreSpider(CrawlSpider):
             item["zone"]     = cfg["zone"]
             item["type_raw"] = rec.get("tx_type")
             item["type"]     = classify_type(rec, cfg["type"], self.type_mapping)
+            
+            # Validate data quality - filter out items with more than 2 null columns
+            if self.has_too_many_null_columns(item):
+                self.logger.warning(f"🚫 REJECTED JSON: Too many null columns in deal: {item.get('building_name_zh', 'N/A')}")
+                continue
             
             self.logger.info(f"✅ Found today's JSON deal: {item.get('building_name_zh', 'N/A')}")
             self.item_count += 1
