@@ -102,7 +102,7 @@ def extract_first(response, xpaths, default=None, use_innerHTML=False):
         # quick sanity check: valid XPaths usually start with '/' or '.'
         if not (xp.startswith("/") or xp.startswith(".")):
             # you can log or print here to see what's wrong
-            print(f"⚠️  skipping invalid xpath fragment: {xp!r}")
+            print(f"WARNING: skipping invalid xpath fragment: {xp!r}")
             continue
         try:
             # If innerHTML mode is requested, try innerHTML extraction first
@@ -146,7 +146,7 @@ def extract_first(response, xpaths, default=None, use_innerHTML=False):
                             
         except Exception as e:
             # malformed XPath—skip it, but let me know
-            print(f"⚠️  malformed xpath {xp!r}, skipping: {e}")
+            print(f"WARNING: malformed xpath {xp!r}, skipping: {e}")
             continue
             
     return default
@@ -237,7 +237,7 @@ class StoreSpider(CrawlSpider):
                     self.logger.info(f"📋 Loaded {len(previous_ids)} previously seen deals")
                     return previous_ids
         except Exception as e:
-            self.logger.warning(f"⚠️  Could not load previous deals: {e}")
+            self.logger.warning(f"WARNING: Could not load previous deals: {e}")
         return set()
 
     def save_current_deals(self):
@@ -252,7 +252,7 @@ class StoreSpider(CrawlSpider):
                 json.dump(current_data, f, ensure_ascii=False, indent=2)
             self.logger.info(f"💾 Saved {len(self.current_deals)} current deals for next comparison")
         except Exception as e:
-            self.logger.warning(f"⚠️  Could not save current deals: {e}")
+            self.logger.warning(f"WARNING: Could not save current deals: {e}")
 
     def create_deal_id(self, item):
         """Create unique identifier for a deal"""
@@ -434,7 +434,7 @@ class StoreSpider(CrawlSpider):
 
         rows = response.xpath(cfg["xpaths"].get("rows", ["//tbody/tr"])[0])
         if not rows:
-            self.logger.warning("⚠️ zero rows in %s", response.url)
+            self.logger.warning("WARNING: zero rows in %s", response.url)
             return
 
         self.logger.info(f"📊 Found {len(rows)} rows using xpath: {cfg['xpaths'].get('rows', ['//tbody/tr'])[0]}")
@@ -522,7 +522,7 @@ class StoreSpider(CrawlSpider):
                     item['building_name_zh'] = building_name
                 else:
                     # Log missing building name for debugging
-                    self.logger.warning(f"⚠️ Carpark missing building name - row data: {dict(item)}")
+                    self.logger.warning(f"WARNING: Carpark missing building name - row data: {dict(item)}")
                 
                 # Process combined floor/unit (e.g., "2/P16" → floor="2", unit="P16")
                 floor_unit_combined = item.get('floor_unit_combined', '')
@@ -541,7 +541,7 @@ class StoreSpider(CrawlSpider):
                         item['deal_price'] = str(actual_price)
                         self.logger.debug(f"💰 Converted carpark price: '{price_millions}' million → {actual_price}")
                     except (ValueError, TypeError):
-                        self.logger.warning(f"⚠️ Failed to convert carpark price: '{price_millions}'")
+                        self.logger.warning(f"WARNING: Failed to convert carpark price: '{price_millions}'")
                         item['deal_price'] = price_millions  # Keep original if conversion fails
 
             # Create unique deal ID for change detection
