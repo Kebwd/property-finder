@@ -19,6 +19,7 @@ config:
       city: city
       province: province
       street: street
+      source_url: source_url
     xpaths:
       rows: ["//div[contains(@class,'estate-item')]", "//div[@class='estate-item clearfix']"]  # Target individual property items
       building_name_zh: [".//div[contains(@class,'item-info')]//h3//text()", ".//h3//text()", ".//div[contains(@class,'item-info')]//a//text()"]  # Property name like "星海名城（一期）"
@@ -33,3 +34,4 @@ config:
       city: "深圳"
       province: "廣東"
       street: [".//a[contains(@href,'/chengjiao/') and not(contains(@href,'nanshan') or contains(@href,'futian') or contains(@href,'luohu') or contains(@href,'longgang') or contains(@href,'baoan') or contains(@href,'longhua') or contains(@href,'yantian') or contains(@href,'guangming') or contains(@href,'pingshan') or contains(@href,'dapeng'))]//text()", ".//a[contains(@href,'qianhai') or contains(@href,'houhai') or contains(@href,'chegongmiao')]//text()"]  # Street/area from location links, excluding district links
+      source_url: [".//a[contains(@href,'/xiaoqu/')]/@href", ".//a[contains(@href,'/ershoufang/')]/@href", ".//a/@href"]  # Extract property detail page URL (xiaoqu pages are property details)

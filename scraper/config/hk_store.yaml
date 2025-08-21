@@ -14,6 +14,7 @@ config:
       area: area
       deal_date: tx_date
       deal_price: sell
+      source_url: source_url
     xpaths:
       rows: ["//tbody/tr[position() >= 1]"]  # Start from tr[1] and continue for all rows
       type: ["./td[2]//text()"]
@@ -23,6 +24,7 @@ config:
       tx_date: ["./td[1]/span[@class='transaction-date']/text()", "./td[1]//@*[contains(., '2025')]", "./td[1]//text()[normalize-space()]"]  # Multiple strategies for date extraction
       area: ["./td[4]/div/span[@class='area-value']//text()", "./td[4]//text()"]   # Extract from area-value span
       sell: ["./td[6]/div/span[@class='price-total-value']/text()", "./td[6]//text()[contains(., '$')]", "./td[6]//text()[normalize-space()]"]  # Multiple strategies for price extraction
+      source_url: ["./td[3]//a/@href", "./td[4]//a/@href", ".//a[contains(@href, '/property/')]/@href"]  # Extract property detail URLs
 
 
   - zone: "Hong Kong"
@@ -37,6 +39,7 @@ config:
       area: area
       deal_date: deal_date
       deal_price: deal_price
+      source_url: source_url
     xpaths:
       rows: ["//tbody/tr[position() >= 1]"]  # Start from tr[1] and continue for all rows
       type: ["./td[2]//text()"]
@@ -46,6 +49,7 @@ config:
       area: ["./td[7]//text()"]
       deal_date: ["./td[1]//text()"]
       deal_price: ["./td[8]//text()"]
+      source_url: ["./td[4]//a/@href", "./td[3]//a/@href", ".//a[contains(@href, '/property/')]/@href"]  # Extract property detail URLs
 
   - zone: "Hong Kong"
     type: store
@@ -59,6 +63,7 @@ config:
       area: area
       deal_date: deal_date
       deal_price: deal_price_millions  # Will be converted from millions
+      source_url: source_url
     xpaths:
       rows: ["//tr[position() > 1]"]  # Skip header row, no tbody
       type: ["carpark"]  # We'll override this in spider logic
@@ -67,6 +72,7 @@ config:
       deal_price_millions: ["./td[4]//text()"]  # Price in millions like "0.970"
       deal_date: ["./td[5]//text()"]  # Date in td[5]
       area: ["./td[6]//text()"]  # Area might be in td[6] if exists
+      source_url: ["./td[2]/a/@href", ".//a/@href"]  # Extract URL from link in building name
 
   - zone: "Hong Kong"
     type: store
@@ -80,6 +86,7 @@ config:
       area: area
       deal_date: deal_date
       deal_price: deal_price_millions
+      source_url: source_url
     xpaths:
       rows: ["//tbody/tr[position() >= 1]"]  # Start from tr[1] and continue for all rows
       type: ["商舖"]
@@ -89,6 +96,7 @@ config:
       area: ["./td[5]//text()"]
       deal_date: ["./td[2]//text()"]
       deal_price_millions: ["./td[6]//text()"]
+      source_url: ["./td[3]/a/@href", ".//a/@href"]  # Extract property detail URLs
 
   - zone: "Hong Kong"
     type: store
@@ -102,6 +110,7 @@ config:
       area: area
       deal_date: deal_date
       deal_price: deal_price_millions
+      source_url: source_url
     xpaths:
       rows: ["//tbody/tr[position() >= 1]"]  # Start from tr[1] and continue for all rows
       type: ["工商"]
@@ -111,6 +120,7 @@ config:
       area: ["./td[5]//text()"]
       deal_date: ["./td[2]//text()"]
       deal_price_millions: ["./td[6]//text()"]
+      source_url: ["./td[3]/a/@href", ".//a/@href"]  # Extract property detail URLs
 
   - zone: "Hong Kong"
     type: store
@@ -124,6 +134,7 @@ config:
       area: area
       deal_date: deal_date
       deal_price: deal_price_millions
+      source_url: source_url
     xpaths:
       rows: ["//tbody/tr[position() >= 1]"]  # Start from tr[1] and continue for all rows
       type: ["車位"]
@@ -133,3 +144,4 @@ config:
       area: ["./td[5]//text()"]
       deal_date: ["./td[2]//text()"]
       deal_price_millions: ["./td[6]//text()"]
+      source_url: ["./td[3]/a/@href", ".//a/@href"]  # Extract property detail URLs

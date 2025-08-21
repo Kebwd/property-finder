@@ -20,6 +20,7 @@ config:
       deal_date: deal_date
       deal_price: deal_price
       developer: developer
+      source_url: source_url
     xpaths:
       province: ["//span[@class='province']//text()"]
       city: ["//span[@class='city']//text()"]
@@ -34,3 +35,4 @@ config:
       deal_date: ["//span[@class='deal-date']//text()"]
       deal_price: ["//span[@class='price']//text()", "//div[@class='price-info']//text()"]
       developer: ["//span[@class='developer']//text()"]
+      source_url: [".//a/@href", ".//a[contains(@href, '/shop/')]/@href", ".//a[contains(@href, '/property/')]/@href"]  # Extract property detail URLs

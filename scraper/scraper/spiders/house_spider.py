@@ -167,6 +167,17 @@ class HouseSpider(CrawlSpider):
                 mapped_field = cfg["fields"].get(field, field)
                 item[mapped_field] = value
             
+            # Handle URL completion - convert relative URLs to absolute URLs
+            if "source_url" in item and item["source_url"]:
+                if item["source_url"].startswith('/'):
+                    # Convert relative URL to absolute URL
+                    base_url = response.url.split('/')[0] + '//' + response.url.split('/')[2]
+                    item["source_url"] = base_url + item["source_url"]
+                elif not item["source_url"].startswith('http'):
+                    # If it's not a relative path and not absolute, make it absolute
+                    base_url = response.url.split('/')[0] + '//' + response.url.split('/')[2]
+                    item["source_url"] = base_url + '/' + item["source_url"]
+            
             # Apply type mapping
             raw_type = item.get("type_raw", "")
             normalized_type = self.house_types.get(raw_type, raw_type)

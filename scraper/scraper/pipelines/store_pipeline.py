@@ -85,6 +85,11 @@ class StorePipeline:
         floor = item.get("floor", "")
         unit = item.get("unit", "")
         
+        # Validate building name - skip if empty or null
+        if not building_name or building_name.strip() == '':
+            spider.logger.warning(f"⏭️  Skipping item due to missing building name")
+            return
+        
         # Check for existing deal
         self.cur.execute("""
             SELECT id FROM business 
@@ -102,7 +107,21 @@ class StorePipeline:
         # Create location_info record with scraped address data
         location_id = self._create_or_get_location_info(item, spider)
         
-        # Insert business record
+        # Get or clean source URL
+        source_url = item.get('source_url', '').strip() if item.get('source_url') else None
+        if source_url and not source_url.startswith('http'):
+            # Handle relative URLs by adding base domain
+            start_url = str(item.get('start_url', ''))
+            if 'midlandici' in start_url:
+                source_url = f"https://www.midlandici.com.hk{source_url}"
+            elif 'centanet' in start_url:
+                source_url = f"https://oir.centanet.com{source_url}"
+            elif 'property.hk' in start_url:
+                source_url = f"https://www.property.hk{source_url}"
+            elif 'carparkhk.com' in start_url:
+                source_url = f"https://carparkhk.com{source_url}"
+        
+        # Insert business record with source URL
         hk_values = (
             item.get("type"),
             building_name,
@@ -112,16 +131,17 @@ class StorePipeline:
             deal_date,
             deal_price,
             item.get("developer"),
-            location_id
+            location_id,
+            source_url
         )
         
         self.cur.execute("""
-            INSERT INTO business (type, building_name_zh, floor, unit, area, deal_date, deal_price, developer, location_id)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+            INSERT INTO business (type, building_name_zh, floor, unit, area, deal_date, deal_price, developer, location_id, source_url)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
         """, hk_values)
         
         self.conn.commit()
-        spider.logger.info(f"✅ Stored HK deal: {building_name} - {deal_price}")
+        spider.logger.info(f"✅ Stored HK deal: {building_name} - {deal_price} (URL: {source_url})")
 
     def _process_china_item(self, item, spider):
         """Process China property deals"""
@@ -129,6 +149,11 @@ class StorePipeline:
         building_name = item.get("building_name_zh", "")
         deal_price = item.get("deal_price", "")
         deal_date = item.get("deal_date", "")
+        
+        # Validate building name - skip if empty or null
+        if not building_name or building_name.strip() == '':
+            spider.logger.warning(f"⏭️  Skipping item due to missing building name")
+            return
         
         # Check for existing deal
         self.cur.execute("""
@@ -142,6 +167,18 @@ class StorePipeline:
             spider.logger.debug(f"⏭️  Deal already exists in database: {building_name}")
             return
         
+        # Get or clean source URL
+        source_url = item.get('source_url', '').strip() if item.get('source_url') else None
+        if source_url and not source_url.startswith('http'):
+            # Handle relative URLs by adding base domain for Chinese sites
+            start_url = str(item.get('start_url', ''))
+            if 'lianjia.com' in start_url or 'ke.com' in start_url:
+                source_url = f"https://bj.ke.com{source_url}"
+            elif source_url.startswith('/'):
+                # General relative URL handling
+                from urllib.parse import urljoin
+                source_url = urljoin(start_url, source_url)
+
         cn_location_values = (
             item.get("province"),
             item.get("city"),
@@ -159,7 +196,8 @@ class StorePipeline:
             item.get("area"),
             deal_date,
             deal_price,
-            item.get("developer")
+            item.get("developer"),
+            source_url
         )
         
         # Get coordinates
@@ -183,15 +221,15 @@ class StorePipeline:
             location_id = None
         
         self.cur.execute("""
-            INSERT INTO business (type, building_name_zh, floor, unit, area, deal_date, deal_price, developer, location_id)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+            INSERT INTO business (type, building_name_zh, floor, unit, area, deal_date, deal_price, developer, location_id, source_url)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
         """, cn_values + (location_id,))
         
         self.conn.commit()
-        spider.logger.info(f"✅ Stored China deal: {building_name} - {deal_price}")
+        spider.logger.info(f"✅ Stored China deal: {building_name} - {deal_price} (URL: {source_url})")
 
     def _create_or_get_location_info(self, item, spider):
-        """Create or get location_info record based on scraped data"""
+        """Create or get location_info record based on scraped data with enhanced street extraction"""
         building_name = item.get("building_name_zh", "") or ""
         
         # Extract location details from item (if available)
@@ -199,44 +237,70 @@ class StorePipeline:
         district = item.get("district", "") or ""
         area = item.get("area_name", "") or ""
         
+        # Enhanced street extraction from building name or address
+        street = ""
+        extracted_street = self._extract_street_from_text(building_name)
+        if extracted_street:
+            street = extracted_street
+        elif self._extract_street_from_text(address):
+            street = self._extract_street_from_text(address)
+        
         # Try to create a more specific location record
         # For Hong Kong properties, extract district/area information
         if "Hong Kong" in item.get("zone", ""):
             province = "Hong Kong"
             
-            # Try to determine city/district from building name or other fields
+            # Enhanced location parsing for Hong Kong
             if building_name and any(keyword in building_name for keyword in ["中環", "Central"]):
                 city = "Hong Kong Island"
                 country = "Central and Western"
                 town = "Central"
-                street = "Central District"
+                if not street:
+                    street = "Central District"
                 road = building_name
             elif building_name and any(keyword in building_name for keyword in ["尖沙咀", "Tsim Sha Tsui", "九龍", "Kowloon"]):
                 city = "Kowloon"
                 country = "Yau Tsim Mong"
                 town = "Tsim Sha Tsui"
-                street = "Nathan Rd"
+                if not street:
+                    street = "Nathan Road"
                 road = building_name
             elif building_name and any(keyword in building_name for keyword in ["筲箕灣", "Shau Kei Wan"]):
                 city = "Hong Kong Island"
                 country = "Eastern"
                 town = "Shau Kei Wan"
-                street = "Shau Kei Wan Road"
+                if not street:
+                    street = "Shau Kei Wan Road"
+                road = building_name
+            elif building_name and any(keyword in building_name for keyword in ["銅鑼灣", "Causeway Bay"]):
+                city = "Hong Kong Island"
+                country = "Wan Chai"
+                town = "Causeway Bay"
+                if not street:
+                    street = "Hennessy Road"
+                road = building_name
+            elif building_name and any(keyword in building_name for keyword in ["旺角", "Mong Kok"]):
+                city = "Kowloon"
+                country = "Yau Tsim Mong"
+                town = "Mong Kok"
+                if not street:
+                    street = "Nathan Road"
                 road = building_name
             else:
                 # Default to Kowloon for other HK properties
                 city = "Kowloon"
                 country = "Yau Tsim Mong"
                 town = "Tsim Sha Tsui"
-                street = "Nathan Rd"
+                if not street:
+                    street = "Nathan Road"
                 road = building_name or "Unknown Building"
             
-            # Check if this location already exists
+            # Check if this location already exists (including street in matching)
             self.cur.execute("""
                 SELECT id FROM location_info 
-                WHERE province = %s AND city = %s AND country = %s AND road = %s
+                WHERE province = %s AND city = %s AND country = %s AND town = %s AND street = %s AND road = %s
                 LIMIT 1
-            """, (province, city, country, road))
+            """, (province, city, country, town, street, road))
             
             existing_location = self.cur.fetchone()
             if existing_location:
@@ -259,7 +323,7 @@ class StorePipeline:
                 lat, lng = 22.298, 114.172
                 spider.logger.warning(f"⚠️  Geocoding failed for {building_name}, using default coordinates")
             
-            # Create new location record
+            # Create new location record with street data
             try:
                 self.cur.execute("""
                     INSERT INTO location_info (province, city, country, town, street, road, lat, long, geom)
@@ -268,7 +332,7 @@ class StorePipeline:
                 """, (province, city, country, town, street, road, lat, lng, lng, lat))
                 
                 location_id = self.cur.fetchone()[0]
-                spider.logger.info(f"📍 Created new location: {location_id} for {building_name} in {town}, {city}")
+                spider.logger.info(f"📍 Created new location: {location_id} for {building_name} in {street}, {town}, {city}")
                 return location_id
                 
             except Exception as e:
@@ -289,6 +353,36 @@ class StorePipeline:
             # For non-Hong Kong properties, use simpler logic
             spider.logger.warning(f"⚠️  Non-Hong Kong property, using default location logic")
             return None
+
+    def _extract_street_from_text(self, text):
+        """Extract street-level information from Chinese text"""
+        if not text:
+            return ""
+        
+        # Common Hong Kong street patterns
+        street_patterns = [
+            r'(\w+道)',      # 道 (road)
+            r'(\w+街)',      # 街 (street)
+            r'(\w+路)',      # 路 (road)
+            r'(\w+巷)',      # 巷 (lane)
+            r'(\w+里)',      # 里 (village/lane)
+            r'(\w+坊)',      # 坊 (square)
+            r'(\w+徑)',      # 徑 (path)
+            r'(\w+園)',      # 園 (garden/estate)
+            r'(\w+苑)',      # 苑 (court/garden)
+            r'(\w+灣)',      # 灣 (bay)
+            r'(\w+角)',      # 角 (corner)
+            r'(\w+台)',      # 台 (terrace)
+            r'(\w+廣場)',    # 廣場 (plaza)
+        ]
+        
+        import re
+        for pattern in street_patterns:
+            match = re.search(pattern, text)
+            if match:
+                return match.group(1)
+        
+        return ""
 
     def close_spider(self, spider):
         if self.conn and self.cur:

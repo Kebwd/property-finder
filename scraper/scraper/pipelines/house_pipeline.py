@@ -70,17 +70,24 @@ class HousePipeline:
                 province = '香港'
                 city = town  # For HK, city might be the same as town
             
-            # First, try to find existing location
-            self.cur.execute("""
-                SELECT id FROM location_info 
-                WHERE town = %s AND country = %s
-                LIMIT 1
-            """, (town, country))
+            # First, try to find existing location (including street data)
+            if street and street.strip():
+                self.cur.execute("""
+                    SELECT id FROM location_info 
+                    WHERE town = %s AND country = %s AND street = %s
+                    LIMIT 1
+                """, (town, country, street))
+            else:
+                self.cur.execute("""
+                    SELECT id FROM location_info 
+                    WHERE town = %s AND country = %s AND (street IS NULL OR street = '')
+                    LIMIT 1
+                """, (town, country))
             
             result = self.cur.fetchone()
             if result:
                 location_id = result[0]
-                spider.logger.debug(f"📍 Found existing location_id {location_id} for {town}, {country}")
+                spider.logger.debug(f"📍 Found existing location_id {location_id} for {town}, {country}" + (f" - {street}" if street else ""))
                 return location_id
             
             # If not found, create new location record with geocoding
@@ -113,19 +120,19 @@ class HousePipeline:
             except Exception as geo_error:
                 spider.logger.warning(f"⚠️  Geocoding failed for {town}: {geo_error}")
             
-            # Insert new location record
+            # Insert new location record (including street data)
             if lat and lng:
                 self.cur.execute("""
-                    INSERT INTO location_info (province, city, country, town, lat, long, geom)
-                    VALUES (%s, %s, %s, %s, %s, %s, ST_GeomFromText(%s, 4326))
+                    INSERT INTO location_info (province, city, country, town, street, lat, long, geom)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, ST_GeomFromText(%s, 4326))
                     RETURNING id
-                """, (province, city, country, town, lat, lng, geom))
+                """, (province, city, country, town, street, lat, lng, geom))
             else:
                 self.cur.execute("""
-                    INSERT INTO location_info (province, city, country, town)
-                    VALUES (%s, %s, %s, %s)
+                    INSERT INTO location_info (province, city, country, town, street)
+                    VALUES (%s, %s, %s, %s, %s)
                     RETURNING id
-                """, (province, city, country, town))
+                """, (province, city, country, town, street))
             
             location_id = self.cur.fetchone()[0]
             self.conn.commit()
@@ -154,11 +161,11 @@ class HousePipeline:
             # Handle location data - find or create location record
             location_id = self.get_or_create_location(item, spider)
             
-            # Insert into house table (with street field)
+            # Insert into house table (with source_url field, street stored in location_info)
             insert_query = """
                 INSERT INTO house (
                     location_id, type, building_name_zh, flat, floor, unit,
-                    area, deal_price, deal_date, developer, house_type, estate_name_zh, street
+                    area, deal_price, deal_date, developer, house_type, estate_name_zh, source_url
                 ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
             """
             
@@ -176,7 +183,7 @@ class HousePipeline:
                 item.get('developer', ''),
                 item.get('house_type', ''),
                 item.get('estate_name_zh', ''),
-                item.get('street', '')
+                item.get('source_url', '')
             ))
             
             self.conn.commit()
