@@ -45,6 +45,98 @@ class HousePipeline:
             self.conn = None
             self.cur = None
 
+    def get_or_create_location(self, item, spider):
+        """
+        Find or create a location record based on the item data.
+        Returns the location_id to use for the house record.
+        """
+        try:
+            # Extract location data from item
+            zone = item.get('zone', '')
+            town = item.get('town', '')
+            street = item.get('street', '')
+            
+            if not town:
+                spider.logger.warning("⚠️  No town data, using default location_id=1")
+                return 1
+            
+            # Determine country and province based on zone
+            if zone == 'China':
+                country = '中国'
+                province = '广东省'  # Assuming Shenzhen area for now
+                city = '深圳市'
+            else:
+                country = '香港'
+                province = '香港'
+                city = town  # For HK, city might be the same as town
+            
+            # First, try to find existing location
+            self.cur.execute("""
+                SELECT id FROM location_info 
+                WHERE town = %s AND country = %s
+                LIMIT 1
+            """, (town, country))
+            
+            result = self.cur.fetchone()
+            if result:
+                location_id = result[0]
+                spider.logger.debug(f"📍 Found existing location_id {location_id} for {town}, {country}")
+                return location_id
+            
+            # If not found, create new location record with geocoding
+            lat, lng, geom = None, None, None
+            
+            # Attempt to geocode the location
+            try:
+                # Create address for geocoding - use street + town for better accuracy
+                address_parts = []
+                if street and street.strip():
+                    address_parts.append(street)
+                address_parts.append(town)
+                
+                if zone == 'China':
+                    address_parts.extend(['深圳市', '广东省', '中国'])
+                    geocode_address = ', '.join(address_parts)
+                    coords = geocode(geocode_address, zone="China")
+                else:
+                    address_parts.append('香港')
+                    geocode_address = ', '.join(address_parts)
+                    coords = geocode(geocode_address, zone="HK")
+                
+                if coords:
+                    lat = coords['lat']
+                    lng = coords['lng']
+                    # Create PostGIS point geometry
+                    geom = f"POINT({lng} {lat})"
+                    spider.logger.info(f"🌍 Geocoded {geocode_address}: {lat}, {lng}")
+                
+            except Exception as geo_error:
+                spider.logger.warning(f"⚠️  Geocoding failed for {town}: {geo_error}")
+            
+            # Insert new location record
+            if lat and lng:
+                self.cur.execute("""
+                    INSERT INTO location_info (province, city, country, town, lat, long, geom)
+                    VALUES (%s, %s, %s, %s, %s, %s, ST_GeomFromText(%s, 4326))
+                    RETURNING id
+                """, (province, city, country, town, lat, lng, geom))
+            else:
+                self.cur.execute("""
+                    INSERT INTO location_info (province, city, country, town)
+                    VALUES (%s, %s, %s, %s)
+                    RETURNING id
+                """, (province, city, country, town))
+            
+            location_id = self.cur.fetchone()[0]
+            self.conn.commit()
+            spider.logger.info(f"🆕 Created new location_id {location_id} for {town}, {country}")
+            return location_id
+            
+        except Exception as e:
+            spider.logger.error(f"❌ Error handling location data: {e}")
+            self.conn.rollback()
+            return 1  # Fallback to default location_id
+
     def process_item(self, item, spider):
         # Skip if no database connection
         if not self.conn or not self.cur:
@@ -59,17 +151,20 @@ class HousePipeline:
             # Log the item being processed
             spider.logger.info(f"💾 Storing house: {item.get('building_name_zh', 'N/A')} - {item.get('type_raw', 'N/A')}")
             
-            # Insert into house table (similar structure to store pipeline)
+            # Handle location data - find or create location record
+            location_id = self.get_or_create_location(item, spider)
+            
+            # Insert into house table (with street field)
             insert_query = """
                 INSERT INTO house (
                     location_id, type, building_name_zh, flat, floor, unit,
-                    area, deal_price, deal_date, developer, house_type, estate_name_zh
-                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                    area, deal_price, deal_date, developer, house_type, estate_name_zh, street
+                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
             """
             
             # Execute the insert
             self.cur.execute(insert_query, (
-                item.get('location_id', 1),  # Default location_id
+                location_id,  # Use the found/created location_id
                 item.get('type', ''),
                 item.get('building_name_zh', ''),
                 item.get('flat', ''),
@@ -80,7 +175,8 @@ class HousePipeline:
                 item.get('deal_date'),
                 item.get('developer', ''),
                 item.get('house_type', ''),
-                item.get('estate_name_zh', '')
+                item.get('estate_name_zh', ''),
+                item.get('street', '')
             ))
             
             self.conn.commit()

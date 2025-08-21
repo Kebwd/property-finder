@@ -89,3 +89,47 @@ config:
       area: ["./td[5]//text()"]
       deal_date: ["./td[2]//text()"]
       deal_price_millions: ["./td[6]//text()"]
+
+  - zone: "Hong Kong"
+    type: store
+    start_urls:
+      - "https://www.property.hk/tran/t4/"
+    fields:
+      type: type
+      building_name_zh: propertyNameCn
+      floor: floor
+      unit: unit
+      area: area
+      deal_date: deal_date
+      deal_price: deal_price_millions
+    xpaths:
+      rows: ["//tbody/tr[position() >= 1]"]  # Start from tr[1] and continue for all rows
+      type: ["工商"]
+      propertyNameCn: ["./td[3]/a/text()", "./td[3]//text()[normalize-space()]", "./td[3]//text()"]  # Building name in td[4] link, fallback to district in td[3]
+      floor: [""]
+      unit: ["./td[4]//text()"]
+      area: ["./td[5]//text()"]
+      deal_date: ["./td[2]//text()"]
+      deal_price_millions: ["./td[6]//text()"]
+
+  - zone: "Hong Kong"
+    type: store
+    start_urls:
+      - "https://www.property.hk/tran/t5/"
+    fields:
+      type: type
+      building_name_zh: propertyNameCn
+      floor: floor
+      unit: unit
+      area: area
+      deal_date: deal_date
+      deal_price: deal_price_millions
+    xpaths:
+      rows: ["//tbody/tr[position() >= 1]"]  # Start from tr[1] and continue for all rows
+      type: ["車位"]
+      propertyNameCn: ["./td[3]/a/text()", "./td[3]//text()[normalize-space()]", "./td[3]//text()"]  # Building name in td[4] link, fallback to district in td[3]
+      floor: [""]
+      unit: ["./td[4]//text()"]
+      area: ["./td[5]//text()"]
+      deal_date: ["./td[2]//text()"]
+      deal_price_millions: ["./td[6]//text()"]

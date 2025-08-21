@@ -1,6 +1,7 @@
 # house_spider.py - Enhanced with store spider improvements
 import os
 import scrapy
+import logging
 from scrapy.spiders import CrawlSpider, Rule
 from scrapy.linkextractors import LinkExtractor
 from scrapy import signals
@@ -13,11 +14,19 @@ sys.path.append(str(Path(__file__).parents[2]))
 from utils.config_loader import load_config
 
 
-def extract_first(response, xpaths, default=None):
-    for xp in xpaths:
+def extract_first(response, xpaths, default=None, debug_field=None):
+    if debug_field == "deal_date":
+        logging.info(f"🔍 DEBUG - Extracting {debug_field} with XPaths: {xpaths}")
+    
+    for i, xp in enumerate(xpaths):
         val = response.xpath(xp).get()
+        if debug_field == "deal_date":
+            logging.info(f"🔍 DEBUG - XPath {i}: '{xp}' -> '{val}'")
         if val:
             return val.strip()
+    
+    if debug_field == "deal_date":
+        logging.info(f"🔍 DEBUG - No value found for {debug_field}, returning default: {default}")
     return default
 
 def generate_fields(record, config_fields, response=None, xpath_map=None):
@@ -30,7 +39,7 @@ def generate_fields(record, config_fields, response=None, xpath_map=None):
         else:
             # Fallback to XPath
             if response and xpath_map and std_field in xpath_map:
-                fields[std_field] = extract_first(response, xpath_map[std_field])
+                fields[std_field] = extract_first(response, xpath_map[std_field], debug_field=std_field if std_field == "deal_date" else None)
             else:
                 fields[std_field] = None
     return fields
@@ -136,14 +145,20 @@ class HouseSpider(CrawlSpider):
                 if isinstance(xpath_list, str):
                     xpath_list = [xpath_list]
                     
-                # Try each XPath until one works
+                # Check if this is a static value (doesn't start with . or /)
                 value = None
                 for xpath in xpath_list:
                     try:
-                        value = row.xpath(xpath).get()
-                        if value and value.strip():
-                            value = value.strip()
+                        # Handle static values (non-XPath)
+                        if not xpath.startswith('.') and not xpath.startswith('/') and not xpath.startswith('@'):
+                            value = xpath  # Use the value directly
                             break
+                        else:
+                            # Handle XPath extraction
+                            value = row.xpath(xpath).get()
+                            if value and value.strip():
+                                value = value.strip()
+                                break
                     except Exception as e:
                         self.logger.debug(f"XPath failed for {field}: {e}")
                         continue
@@ -155,7 +170,11 @@ class HouseSpider(CrawlSpider):
             # Apply type mapping
             raw_type = item.get("type_raw", "")
             normalized_type = self.house_types.get(raw_type, raw_type)
-            item["type"] = [normalized_type] if normalized_type else []
+            # Handle case where normalized_type might already be a list
+            if isinstance(normalized_type, list):
+                item["type"] = normalized_type
+            else:
+                item["type"] = [normalized_type] if normalized_type else []
             
             # Data quality validation
             if self.has_too_many_null_columns(item):

@@ -15,11 +15,20 @@ def normalize_date(raw):
             date_part = str(raw).split(' ')[0]  # Get just the date part
             return date_part  # Already in YYYY-MM-DD format
             
-        # Handle "15/7/2025" format (from HTML)
+        # Handle "15/7/2025" format (DD/MM/YYYY from Hong Kong sites)
         if '/' in str(raw):
-            d, m, y = str(raw).split('/')
-            result = f"{int(y):04d}-{int(m):02d}-{int(d):02d}"
-            return result
+            parts = str(raw).split('/')
+            if len(parts) == 3:
+                # Check if it's YYYY/MM/DD format (from Chinese sites)
+                if len(parts[0]) == 4:  # Year first
+                    y, m, d = parts
+                    result = f"{int(y):04d}-{int(m):02d}-{int(d):02d}"
+                    return result
+                # Otherwise DD/MM/YYYY format (Hong Kong sites)
+                else:
+                    d, m, y = parts
+                    result = f"{int(y):04d}-{int(m):02d}-{int(d):02d}"
+                    return result
             
         # If already in YYYY-MM-DD format
         if '-' in str(raw) and len(str(raw)) == 10:

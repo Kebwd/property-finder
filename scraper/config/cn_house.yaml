@@ -4,42 +4,32 @@ key_mapping:
 config:
   - zone: "China"
     type: "house"
-
     start_urls:
       - "https://sz.centanet.com/chengjiao/"
     fields:
-      province: province
-      city: city
-      country: country
-      town: town
-      street: street
-      road: road
-      type: type
-      estate_name_zh: estate_name_zh
-      flat: flat
       building_name_zh: building_name_zh
-      floor: floor
-      unit: unit
-      area: area
       house_type: house_type
-      deal_date: deal_date
-      deal_price: deal_price
-      developer: developer
-    xpaths:
-      province: province
-      city: city
-      country: country
+      area: area
       town: town
-      street: street
-      road: road
-      type: type
-      estate_name_zh: estate_name_zh
-      flat: flat
-      building_name_zh: "//a[@class='house-title']"
+      deal_price: deal_price
+      deal_date: deal_date
+      type_raw: type_raw
       floor: floor
       unit: unit
-      area: area
-      house_type: "/html/body/div[5]/div/div[2]/div[1]/div[1]/p[1]/span[1]"
-      deal_date: deal_date
-      deal_price: deal_price
-      developer: developer
+      city: city
+      province: province
+      street: street
+    xpaths:
+      rows: ["//div[contains(@class,'estate-item')]", "//div[@class='estate-item clearfix']"]  # Target individual property items
+      building_name_zh: [".//div[contains(@class,'item-info')]//h3//text()", ".//h3//text()", ".//div[contains(@class,'item-info')]//a//text()"]  # Property name like "星海名城（一期）"
+      house_type: [".//div[contains(@class,'item-info')]//text()[contains(.,'室')]", ".//text()[contains(.,'室')]"]  # Room details like "2室2厅1卫"
+      area: [".//div[contains(@class,'item-info')]//text()[contains(.,'平')]", ".//text()[contains(.,'平')]"]  # Area like "70.27平"
+      town: [".//div[contains(@class,'item-info')]//text()[contains(.,'福田') or contains(.,'罗湖') or contains(.,'南山') or contains(.,'龙岗') or contains(.,'宝安') or contains(.,'龙华') or contains(.,'盐田') or contains(.,'光明') or contains(.,'坪山') or contains(.,'大鹏新区') or contains(.,'东莞')]", ".//text()[contains(.,'南山') or contains(.,'前海')]"]  # Location like "南山-前海"
+      deal_price: [".//div[contains(@class,'item-pricearea')]//text()[contains(.,'万')]", ".//text()[contains(.,'万')]"]  # Price like "445万"
+      deal_date: [".//span[@class='house-txt-time']/text()", ".//span[contains(@class,'house-txt-time')]//text()", ".//text()[contains(.,'2025/')]"]  # Date extraction
+      type_raw: "住宅"  # Default type for houses
+      floor: [".//text()[contains(.,'层')]"]  # Floor information if available
+      unit: [".//text()[contains(.,'室')]"]  # Unit info from room details
+      city: "深圳"
+      province: "廣東"
+      street: [".//a[contains(@href,'/chengjiao/') and not(contains(@href,'nanshan') or contains(@href,'futian') or contains(@href,'luohu') or contains(@href,'longgang') or contains(@href,'baoan') or contains(@href,'longhua') or contains(@href,'yantian') or contains(@href,'guangming') or contains(@href,'pingshan') or contains(@href,'dapeng'))]//text()", ".//a[contains(@href,'qianhai') or contains(@href,'houhai') or contains(@href,'chegongmiao')]//text()"]  # Street/area from location links, excluding district links

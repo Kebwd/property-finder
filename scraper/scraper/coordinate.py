@@ -23,14 +23,14 @@ def try_nominatim(query):
         "lng": float(data[0]["lon"])
     }
 
-def try_google(query):
+def try_google(query, country_code="HK"):
     key = "AIzaSyDlv66UsXVq_6KJORiUSbGCp_SAXT2cq10"
     if not key:
         raise Exception("Google Maps API key not found in environment variables")
 
     params = {
         "address": query,
-        "components": "country:HK",
+        "components": f"country:{country_code}",
         "key": key
     }
     response = requests.get(GOOGLE_GEOCODE_BASE, params=params)
@@ -43,13 +43,20 @@ def try_google(query):
         "lng": loc["lng"]
     }
 
-def geocode(query):
+def geocode(query, zone="HK"):
     if not query.strip():
         raise ValueError("Please enter a location")
-    biased = f"{query}, Hong Kong"
+    
+    # Create location-specific bias based on zone
+    if zone == "China":
+        biased = f"{query}, Shenzhen, Guangdong, China"
+        country_code = "CN"
+    else:
+        biased = f"{query}, Hong Kong"
+        country_code = "HK"
 
     try:
         return try_nominatim(biased)
     except Exception as e:
         print(f"{e} → falling back to Google Maps")
-        return try_google(biased)
+        return try_google(biased, country_code)
