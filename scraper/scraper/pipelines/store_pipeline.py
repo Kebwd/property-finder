@@ -120,10 +120,16 @@ class StorePipeline:
                 source_url = f"https://www.property.hk{source_url}"
             elif 'carparkhk.com' in start_url:
                 source_url = f"https://carparkhk.com{source_url}"
+        # Extract type as string (first element if it's a list)
+        item_type = item.get("type")
+        if isinstance(item_type, list) and item_type:
+            type_string = item_type[0]
+        else:
+            type_string = str(item_type) if item_type else ""
         
         # Insert business record with source URL
         hk_values = (
-            item.get("type"),
+            type_string,
             building_name,
             floor,
             unit,
@@ -179,6 +185,13 @@ class StorePipeline:
                 from urllib.parse import urljoin
                 source_url = urljoin(start_url, source_url)
 
+        # Extract type as string (first element if it's a list)
+        item_type = item.get("type")
+        if isinstance(item_type, list) and item_type:
+            type_string = item_type[0]
+        else:
+            type_string = str(item_type) if item_type else ""
+
         cn_location_values = (
             item.get("province"),
             item.get("city"),
@@ -189,7 +202,7 @@ class StorePipeline:
         )
         
         cn_values = (
-            item.get("type"),
+            type_string,
             building_name,
             item.get("floor"),
             item.get("unit"),

@@ -169,10 +169,17 @@ class HousePipeline:
                 ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
             """
             
+            # Extract type as string (first element if it's a list)
+            item_type = item.get('type')
+            if isinstance(item_type, list) and item_type:
+                type_string = item_type[0]
+            else:
+                type_string = str(item_type) if item_type else ""
+            
             # Execute the insert
             self.cur.execute(insert_query, (
                 location_id,  # Use the found/created location_id
-                item.get('type', ''),
+                type_string,
                 item.get('building_name_zh', ''),
                 item.get('flat', ''),
                 item.get('floor', ''),
