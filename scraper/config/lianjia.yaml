@@ -1,0 +1,182 @@
+# Lianjia (链家) Configuration for China Properties
+# Supports multiple cities and regions based on user requirements
+
+cities:
+  # 北京市
+  beijing:
+    name: "北京"
+    province: "北京市"
+    base_url: "https://bj.lianjia.com"
+    ershoufang_url: "https://bj.lianjia.com/ershoufang/"
+    zufang_url: "https://bj.lianjia.com/zufang/"
+    
+  # 上海市  
+  shanghai:
+    name: "上海"
+    province: "上海市"
+    base_url: "https://sh.lianjia.com"
+    ershoufang_url: "https://sh.lianjia.com/ershoufang/"
+    zufang_url: "https://sh.lianjia.com/zufang/"
+    
+  # 重庆市
+  chongqing:
+    name: "重庆"
+    province: "重庆市"
+    base_url: "https://cq.lianjia.com"
+    ershoufang_url: "https://cq.lianjia.com/ershoufang/"
+    zufang_url: "https://cq.lianjia.com/zufang/"
+    
+  # 广东省 - 主要城市
+  shenzhen:
+    name: "深圳"
+    province: "广东省"
+    base_url: "https://sz.lianjia.com" 
+    ershoufang_url: "https://sz.lianjia.com/ershoufang/"
+    zufang_url: "https://sz.lianjia.com/zufang/"
+    
+  guangzhou:
+    name: "广州"
+    province: "广东省"
+    base_url: "https://gz.lianjia.com"
+    ershoufang_url: "https://gz.lianjia.com/ershoufang/"
+    zufang_url: "https://gz.lianjia.com/zufang/"
+    
+  dongguan:
+    name: "东莞"
+    province: "广东省"
+    base_url: "https://dg.lianjia.com"
+    ershoufang_url: "https://dg.lianjia.com/ershoufang/"
+    zufang_url: "https://dg.lianjia.com/zufang/"
+    
+  foshan:
+    name: "佛山"
+    province: "广东省"
+    base_url: "https://fs.lianjia.com"
+    ershoufang_url: "https://fs.lianjia.com/ershoufang/"
+    zufang_url: "https://fs.lianjia.com/zufang/"
+    
+  zhuhai:
+    name: "珠海"
+    province: "广东省"
+    base_url: "https://zh.lianjia.com"
+    ershoufang_url: "https://zh.lianjia.com/ershoufang/"
+    zufang_url: "https://zh.lianjia.com/zufang/"
+    
+  zhongshan:
+    name: "中山"
+    province: "广东省"
+    base_url: "https://zs.lianjia.com"
+    ershoufang_url: "https://zs.lianjia.com/ershoufang/"
+    zufang_url: "https://zs.lianjia.com/zufang/"
+    
+  huizhou:
+    name: "惠州"
+    province: "广东省"
+    base_url: "https://hz.lianjia.com"
+    ershoufang_url: "https://hz.lianjia.com/ershoufang/"
+    zufang_url: "https://hz.lianjia.com/zufang/"
+    
+  jiangmen:
+    name: "江门"
+    province: "广东省"
+    base_url: "https://jm.lianjia.com"
+    ershoufang_url: "https://jm.lianjia.com/ershoufang/"
+    zufang_url: "https://jm.lianjia.com/zufang/"
+    
+  # 福建省
+  xiamen:
+    name: "厦门"
+    province: "福建省"
+    base_url: "https://xm.lianjia.com"
+    ershoufang_url: "https://xm.lianjia.com/ershoufang/"
+    zufang_url: "https://xm.lianjia.com/zufang/"
+    
+  fuzhou:
+    name: "福州"
+    province: "福建省"
+    base_url: "https://fz.lianjia.com"
+    ershoufang_url: "https://fz.lianjia.com/ershoufang/"
+    zufang_url: "https://fz.lianjia.com/zufang/"
+    
+  quanzhou:
+    name: "泉州"
+    province: "福建省"
+    base_url: "https://qz.lianjia.com"
+    ershoufang_url: "https://qz.lianjia.com/ershoufang/"
+    zufang_url: "https://qz.lianjia.com/zufang/"
+    
+  # 湖北省
+  wuhan:
+    name: "武汉"
+    province: "湖北省"
+    base_url: "https://wh.lianjia.com"
+    ershoufang_url: "https://wh.lianjia.com/ershoufang/"
+    zufang_url: "https://wh.lianjia.com/zufang/"
+
+# XPath selectors for property data extraction
+selectors:
+  # Property list page selectors
+  property_list: "//ul[@class='sellListContent']/li[@class='clear LOGCLICKDATA']"
+  
+  # Individual property selectors
+  title: ".//div[@class='title']/a/text()"
+  price: ".//div[@class='totalPrice']/span/text()"
+  unit_price: ".//div[@class='unitPrice']/span/text()" 
+  area: ".//div[@class='houseInfo']/text()"
+  location: ".//div[@class='positionInfo']/a[1]/text()"
+  district: ".//div[@class='positionInfo']/a[2]/text()"
+  property_url: ".//div[@class='title']/a/@href"
+  
+  # Detailed property page selectors
+  detail_price: "//span[@class='total']/text()"
+  detail_area: "//div[@class='area']/div[@class='mainInfo']/text()"
+  detail_type: "//div[@class='base']/div[@class='content']/ul/li[1]/text()"
+  building_name: "//div[@class='communityName']/a[1]/text()"
+  floor: "//div[@class='base']/div[@class='content']/ul/li[2]/text()"
+  orientation: "//div[@class='base']/div[@class='content']/ul/li[7]/text()"
+  decoration: "//div[@class='base']/div[@class='content']/ul/li[9]/text()"
+  year_built: "//div[@class='area']/div[@class='subInfo']/text()"
+  
+  # Pagination
+  next_page: "//a[@class='next']/@href"
+  page_numbers: "//div[@class='page-box house-lst-page-box']/@page-data"
+
+# Field mappings for data normalization  
+field_mappings:
+  building_name_zh: "building_name"
+  deal_price: "price"
+  area: "area"
+  floor: "floor" 
+  type_raw: "property_type"
+  zone: "China"
+  province: "province"
+  city: "city"
+  town: "district"
+  street: "location"
+  source_url: "property_url"
+
+# Type mappings for different property types
+type_mappings:
+  "住宅": ["住宅"]
+  "别墅": ["别墅"] 
+  "公寓": ["公寓"]
+  "商铺": ["商铺"]
+  "写字楼": ["写字楼"]
+  "厂房": ["厂房"]
+  "仓库": ["仓库"]
+  "其他": ["其他"]
+
+# Anti-bot settings
+settings:
+  download_delay: 2
+  randomize_download_delay: true
+  user_agents:
+    - "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
+    - "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
+    - "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
+  
+  selenium_settings:
+    headless: true
+    window_size: [1920, 1080]
+    page_load_timeout: 30
+    implicit_wait: 10

@@ -1,0 +1,18 @@
+# Enhanced Anti-Bot Requirements
+# Install these packages for better anti-bot protection
+
+# Core requirements (already in your requirements.txt)
+scrapy>=2.5.0
+selenium>=4.0.0
+requests>=2.25.0
+
+# Enhanced anti-bot protection
+shadow-useragent>=1.0.0  # Advanced user-agent rotation
+fake-useragent>=1.4.0    # Alternative user-agent library
+requests-html>=0.10.0    # For session management
+urllib3>=1.26.0          # HTTP library enhancements
+
+# Optional proxy providers (choose one based on your budget)
+# proxyscrape-api>=1.0.0    # Free proxy API
+# bright-data>=1.0.0        # Premium proxy service
+# proxy-rotator>=1.0.0      # Proxy management library

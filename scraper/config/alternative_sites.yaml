@@ -1,0 +1,110 @@
+# Alternative Property Sites Configuration
+# These sites typically have fewer anti-bot measures than Lianjia
+
+alternative_property_sites:
+  # 58同城 (58.com) - More scraper-friendly
+  site_58:
+    name: "58同城"
+    base_url: "https://www.58.com"
+    cities:
+      beijing:
+        url: "https://bj.58.com/ershoufang/"
+        selectors:
+          property_list: "//div[@class='property-list']//li"
+          title: ".//h2[@class='property-title']/a/text()"
+          price: ".//span[@class='property-price']/text()"
+          area: ".//span[@class='property-area']/text()"
+          location: ".//span[@class='property-location']/text()"
+          
+      shanghai:
+        url: "https://sh.58.com/ershoufang/"
+        selectors:
+          property_list: "//div[@class='property-list']//li"
+          title: ".//h2[@class='property-title']/a/text()"
+          price: ".//span[@class='property-price']/text()"
+          area: ".//span[@class='property-area']/text()"
+          location: ".//span[@class='property-location']/text()"
+          
+      shenzhen:
+        url: "https://sz.58.com/ershoufang/"
+        selectors:
+          property_list: "//div[@class='property-list']//li"
+          title: ".//h2[@class='property-title']/a/text()"
+          price: ".//span[@class='property-price']/text()"
+          area: ".//span[@class='property-area']/text()"
+          location: ".//span[@class='property-location']/text()"
+
+  # 安居客 (Anjuke.com) - Good coverage for smaller cities
+  anjuke:
+    name: "安居客"
+    base_url: "https://www.anjuke.com"
+    cities:
+      guangzhou:
+        url: "https://guangzhou.anjuke.com/sale/"
+        selectors:
+          property_list: "//div[@class='property-content']//li"
+          title: ".//h3[@class='property-title']/a/text()"
+          price: ".//span[@class='price-num']/text()"
+          area: ".//span[@class='property-area']/text()"
+          location: ".//address[@class='property-address']/text()"
+          
+      foshan:
+        url: "https://foshan.anjuke.com/sale/"
+        selectors:
+          property_list: "//div[@class='property-content']//li"
+          title: ".//h3[@class='property-title']/a/text()"
+          price: ".//span[@class='price-num']/text()"
+          area: ".//span[@class='property-area']/text()"
+          location: ".//address[@class='property-address']/text()"
+
+  # 房天下 (Fang.com) - Wide city coverage
+  fang:
+    name: "房天下"
+    base_url: "https://www.fang.com"
+    cities:
+      dongguan:
+        url: "https://esf.dg.fang.com/"
+        selectors:
+          property_list: "//dl[@class='clearfix']"
+          title: ".//dt/a/text()"
+          price: ".//span[@class='price']/text()"
+          area: ".//span[@class='area']/text()"
+          location: ".//p[@class='address']/text()"
+
+# Recommended scraping strategy
+scraping_strategy:
+  step1:
+    description: "Start with 58.com for major cities (Beijing, Shanghai, Shenzhen)"
+    reason: "Less aggressive anti-bot measures"
+    
+  step2: 
+    description: "Use Anjuke for Guangdong secondary cities"
+    reason: "Good coverage of smaller cities in Guangdong"
+    
+  step3:
+    description: "Use Fang.com for remaining cities"
+    reason: "Wide coverage but may have some anti-bot measures"
+    
+  step4:
+    description: "Attempt Lianjia for cities with limited alternative coverage"
+    reason: "Last resort due to strong anti-bot measures"
+
+# Anti-bot mitigation strategies
+anti_bot_strategies:
+  basic:
+    - "Use random delays between requests (3-8 seconds)"
+    - "Rotate user agents"
+    - "Use headless browser mode"
+    - "Limit concurrent requests to 1"
+    
+  intermediate:
+    - "Implement proxy rotation"
+    - "Add random mouse movements and scrolling"
+    - "Use session persistence"
+    - "Implement CAPTCHA detection and handling"
+    
+  advanced:
+    - "Use undetected Chrome driver"
+    - "Implement browser fingerprint randomization"
+    - "Use residential proxies"
+    - "Add human-like browsing patterns"

@@ -1,0 +1,406 @@
+{
+  "timestamp": "2025-08-22T16:38:43.918106",
+  "total_cities": 15,
+  "cities": {
+    "guangzhou": {
+      "city": "广州",
+      "city_key": "guangzhou",
+      "province": "广东省",
+      "properties": [
+        {
+          "building_name_zh": "广州住宅",
+          "deal_price": 50000,
+          "area": 8.0,
+          "location": "广州",
+          "zone": "China",
+          "city": "广州",
+          "province": "广东省",
+          "type_raw": "住宅",
+          "type": "住宅",
+          "deal_date": "2025-08-22",
+          "source_url": "http://gz.house.163.com/",
+          "data_source": "网易房产广州",
+          "scraped_city": "广州",
+          "start_url": "http://gz.house.163.com/"
+        },
+        {
+          "building_name_zh": "广州住宅",
+          "deal_price": 440000,
+          "area": 26000.0,
+          "location": "广州",
+          "zone": "China",
+          "city": "广州",
+          "province": "广东省",
+          "type_raw": "住宅",
+          "type": "住宅",
+          "deal_date": "2025-08-22",
+          "source_url": "http://gz.house.163.com/",
+          "data_source": "网易房产广州",
+          "scraped_city": "广州",
+          "start_url": "http://gz.house.163.com/"
+        },
+        {
+          "building_name_zh": "广州住宅",
+          "deal_price": 40000,
+          "area": 8.0,
+          "location": "广州",
+          "zone": "China",
+          "city": "广州",
+          "province": "广东省",
+          "type_raw": "住宅",
+          "type": "住宅",
+          "deal_date": "2025-08-22",
+          "source_url": "http://gz.house.163.com/",
+          "data_source": "网易房产广州",
+          "scraped_city": "广州",
+          "start_url": "http://gz.house.163.com/"
+        }
+      ],
+      "sites_scraped": 2,
+      "timestamp": "2025-08-22T16:38:19.616786"
+    },
+    "beijing": {
+      "city": "北京",
+      "city_key": "beijing",
+      "province": "北京市",
+      "properties": [
+        {
+          "building_name_zh": "北京住宅",
+          "deal_price": 10000,
+          "area": 112.0,
+          "location": "北京",
+          "zone": "China",
+          "city": "北京",
+          "province": "北京市",
+          "type_raw": "住宅",
+          "type": "住宅",
+          "deal_date": "2025-08-22",
+          "source_url": "http://bj.house.163.com/",
+          "data_source": "网易房产北京",
+          "scraped_city": "北京",
+          "start_url": "http://bj.house.163.com/"
+        }
+      ],
+      "sites_scraped": 2,
+      "timestamp": "2025-08-22T16:38:26.575496"
+    },
+    "shanghai": {
+      "city": "上海",
+      "city_key": "shanghai",
+      "province": "上海市",
+      "properties": [],
+      "sites_scraped": 2,
+      "timestamp": "2025-08-22T16:38:17.803105"
+    },
+    "shenzhen": {
+      "city": "深圳",
+      "city_key": "shenzhen",
+      "province": "广东省",
+      "properties": [
+        {
+          "building_name_zh": "深圳住宅项目",
+          "deal_price": 0,
+          "area": 100,
+          "location": "深圳",
+          "zone": "China",
+          "city": "深圳",
+          "province": "广东省",
+          "type_raw": "住宅",
+          "type": "住宅",
+          "deal_date": "2025-08-22",
+          "source_url": "http://sz.house.163.com/",
+          "data_source": "网易房产深圳",
+          "scraped_city": "深圳",
+          "start_url": "http://sz.house.163.com/"
+        }
+      ],
+      "sites_scraped": 2,
+      "timestamp": "2025-08-22T16:38:19.733592"
+    },
+    "foshan": {
+      "city": "佛山",
+      "city_key": "foshan",
+      "province": "广东省",
+      "properties": [
+        {
+          "building_name_zh": "佛山住宅",
+          "deal_price": 10000,
+          "area": 3.0,
+          "location": "佛山",
+          "zone": "China",
+          "city": "佛山",
+          "province": "广东省",
+          "type_raw": "住宅",
+          "type": "住宅",
+          "deal_date": "2025-08-22",
+          "source_url": "https://fs.focus.cn/",
+          "data_source": "搜狐焦点佛山",
+          "scraped_city": "佛山",
+          "start_url": "https://fs.focus.cn/"
+        }
+      ],
+      "sites_scraped": 2,
+      "timestamp": "2025-08-22T16:38:17.240417"
+    },
+    "dongguan": {
+      "city": "东莞",
+      "city_key": "dongguan",
+      "province": "广东省",
+      "properties": [],
+      "sites_scraped": 2,
+      "timestamp": "2025-08-22T16:38:40.664144"
+    },
+    "zhuhai": {
+      "city": "珠海",
+      "city_key": "zhuhai",
+      "province": "广东省",
+      "properties": [],
+      "sites_scraped": 2,
+      "timestamp": "2025-08-22T16:38:31.732780"
+    },
+    "zhongshan": {
+      "city": "中山",
+      "city_key": "zhongshan",
+      "province": "广东省",
+      "properties": [],
+      "sites_scraped": 1,
+      "timestamp": "2025-08-22T16:38:23.634238"
+    },
+    "jiangmen": {
+      "city": "江门",
+      "city_key": "jiangmen",
+      "province": "广东省",
+      "properties": [],
+      "sites_scraped": 1,
+      "timestamp": "2025-08-22T16:38:24.113333"
+    },
+    "huizhou": {
+      "city": "惠州",
+      "city_key": "huizhou",
+      "province": "广东省",
+      "properties": [],
+      "sites_scraped": 1,
+      "timestamp": "2025-08-22T16:38:31.723779"
+    },
+    "chongqing": {
+      "city": "重庆",
+      "city_key": "chongqing",
+      "province": "重庆市",
+      "properties": [],
+      "sites_scraped": 2,
+      "timestamp": "2025-08-22T16:38:39.199888"
+    },
+    "wuhan": {
+      "city": "武汉",
+      "city_key": "wuhan",
+      "province": "湖北省",
+      "properties": [],
+      "sites_scraped": 2,
+      "timestamp": "2025-08-22T16:38:43.918106"
+    },
+    "xiamen": {
+      "city": "厦门",
+      "city_key": "xiamen",
+      "province": "福建省",
+      "properties": [],
+      "sites_scraped": 2,
+      "timestamp": "2025-08-22T16:38:42.808871"
+    },
+    "fuzhou": {
+      "city": "福州",
+      "city_key": "fuzhou",
+      "province": "福建省",
+      "properties": [
+        {
+          "building_name_zh": "福州住宅",
+          "deal_price": 50000,
+          "area": 8.0,
+          "location": "福州",
+          "zone": "China",
+          "city": "福州",
+          "province": "福建省",
+          "type_raw": "住宅",
+          "type": "住宅",
+          "deal_date": "2025-08-22",
+          "source_url": "http://fz.house.163.com/",
+          "data_source": "网易房产福州",
+          "scraped_city": "福州",
+          "start_url": "http://fz.house.163.com/"
+        },
+        {
+          "building_name_zh": "福州住宅",
+          "deal_price": 440000,
+          "area": 26000.0,
+          "location": "福州",
+          "zone": "China",
+          "city": "福州",
+          "province": "福建省",
+          "type_raw": "住宅",
+          "type": "住宅",
+          "deal_date": "2025-08-22",
+          "source_url": "http://fz.house.163.com/",
+          "data_source": "网易房产福州",
+          "scraped_city": "福州",
+          "start_url": "http://fz.house.163.com/"
+        },
+        {
+          "building_name_zh": "福州住宅",
+          "deal_price": 40000,
+          "area": 8.0,
+          "location": "福州",
+          "zone": "China",
+          "city": "福州",
+          "province": "福建省",
+          "type_raw": "住宅",
+          "type": "住宅",
+          "deal_date": "2025-08-22",
+          "source_url": "http://fz.house.163.com/",
+          "data_source": "网易房产福州",
+          "scraped_city": "福州",
+          "start_url": "http://fz.house.163.com/"
+        }
+      ],
+      "sites_scraped": 1,
+      "timestamp": "2025-08-22T16:38:36.195255"
+    },
+    "quanzhou": {
+      "city": "泉州",
+      "city_key": "quanzhou",
+      "province": "福建省",
+      "properties": [
+        {
+          "building_name_zh": "泉州住宅",
+          "deal_price": 50000,
+          "area": 8.0,
+          "location": "泉州",
+          "zone": "China",
+          "city": "泉州",
+          "province": "福建省",
+          "type_raw": "住宅",
+          "type": "住宅",
+          "deal_date": "2025-08-22",
+          "source_url": "http://qz.house.163.com/",
+          "data_source": "网易房产泉州",
+          "scraped_city": "泉州",
+          "start_url": "http://qz.house.163.com/"
+        },
+        {
+          "building_name_zh": "泉州住宅",
+          "deal_price": 440000,
+          "area": 26000.0,
+          "location": "泉州",
+          "zone": "China",
+          "city": "泉州",
+          "province": "福建省",
+          "type_raw": "住宅",
+          "type": "住宅",
+          "deal_date": "2025-08-22",
+          "source_url": "http://qz.house.163.com/",
+          "data_source": "网易房产泉州",
+          "scraped_city": "泉州",
+          "start_url": "http://qz.house.163.com/"
+        },
+        {
+          "building_name_zh": "泉州住宅",
+          "deal_price": 40000,
+          "area": 8.0,
+          "location": "泉州",
+          "zone": "China",
+          "city": "泉州",
+          "province": "福建省",
+          "type_raw": "住宅",
+          "type": "住宅",
+          "deal_date": "2025-08-22",
+          "source_url": "http://qz.house.163.com/",
+          "data_source": "网易房产泉州",
+          "scraped_city": "泉州",
+          "start_url": "http://qz.house.163.com/"
+        }
+      ],
+      "sites_scraped": 1,
+      "timestamp": "2025-08-22T16:38:41.027218"
+    }
+  },
+  "summary": {
+    "guangzhou": {
+      "city_name": "广州",
+      "property_count": 3,
+      "success": true
+    },
+    "beijing": {
+      "city_name": "北京",
+      "property_count": 1,
+      "success": true
+    },
+    "shanghai": {
+      "city_name": "上海",
+      "property_count": 0,
+      "success": false
+    },
+    "shenzhen": {
+      "city_name": "深圳",
+      "property_count": 1,
+      "success": true
+    },
+    "foshan": {
+      "city_name": "佛山",
+      "property_count": 1,
+      "success": true
+    },
+    "dongguan": {
+      "city_name": "东莞",
+      "property_count": 0,
+      "success": false
+    },
+    "zhuhai": {
+      "city_name": "珠海",
+      "property_count": 0,
+      "success": false
+    },
+    "zhongshan": {
+      "city_name": "中山",
+      "property_count": 0,
+      "success": false
+    },
+    "jiangmen": {
+      "city_name": "江门",
+      "property_count": 0,
+      "success": false
+    },
+    "huizhou": {
+      "city_name": "惠州",
+      "property_count": 0,
+      "success": false
+    },
+    "chongqing": {
+      "city_name": "重庆",
+      "property_count": 0,
+      "success": false
+    },
+    "wuhan": {
+      "city_name": "武汉",
+      "property_count": 0,
+      "success": false
+    },
+    "xiamen": {
+      "city_name": "厦门",
+      "property_count": 0,
+      "success": false
+    },
+    "fuzhou": {
+      "city_name": "福州",
+      "property_count": 3,
+      "success": true
+    },
+    "quanzhou": {
+      "city_name": "泉州",
+      "property_count": 3,
+      "success": true
+    },
+    "totals": {
+      "total_properties": 12,
+      "successful_cities": 6,
+      "success_rate": "40.0%"
+    }
+  }
+}

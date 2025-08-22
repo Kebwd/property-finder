@@ -1,0 +1,24 @@
+{
+  "schedules": {
+    "morning_scrape": "08:00",
+    "afternoon_scrape": "14:00",
+    "evening_scrape": "20:00"
+  },
+  "notification": {
+    "email_enabled": false,
+    "email_to": "your-email@example.com",
+    "email_from": "scraper@property-finder.com",
+    "smtp_server": "smtp.gmail.com",
+    "smtp_port": 587,
+    "smtp_user": "",
+    "smtp_password": ""
+  },
+  "data_retention": {
+    "keep_days": 30,
+    "archive_path": "./data/archive/"
+  },
+  "thresholds": {
+    "min_properties_per_run": 10,
+    "max_failures_per_day": 3
+  }
+}

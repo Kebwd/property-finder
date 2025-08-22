@@ -1,0 +1,149 @@
+# Complete city mapping for all regions shown in the user's image
+# Organized by province/region for easy management
+
+city_mappings:
+  # 广东省 (Guangdong Province)
+  guangdong:
+    province_name: "广东省"
+    cities:
+      # Major cities with Lianjia support
+      澳门: "macau"           # Macau (Special Administrative Region)
+      深圳: "shenzhen"        # Shenzhen
+      珠海: "zhuhai"          # Zhuhai  
+      中山: "zhongshan"       # Zhongshan
+      东莞: "dongguan"        # Dongguan
+      惠州: "huizhou"         # Huizhou
+      广州: "guangzhou"       # Guangzhou
+      佛山: "foshan"          # Foshan
+      江门: "jiangmen"        # Jiangmen
+      肇庆: "zhaoqing"        # Zhaoqing
+      韶关: "shaoguan"        # Shaoguan
+      汕头: "shantou"         # Shantou
+      湛江: "zhanjiang"       # Zhanjiang
+      茂名: "maoming"         # Maoming
+      梅州: "meizhou"         # Meizhou
+      汕尾: "shanwei"         # Shanwei
+      河源: "heyuan"          # Heyuan
+      阳江: "yangjiang"       # Yangjiang
+      清远: "qingyuan"        # Qingyuan
+      潮州: "chaozhou"        # Chaozhou
+      揭阳: "jieyang"         # Jieyang
+      云浮: "yunfu"           # Yunfu
+      韶平: "shaoping"        # Shaoping
+
+  # 北京市 (Beijing Municipality)
+  beijing:
+    province_name: "北京市"
+    cities:
+      北京: "beijing"         # Beijing
+
+  # 上海市 (Shanghai Municipality) 
+  shanghai:
+    province_name: "上海市"
+    cities:
+      上海: "shanghai"        # Shanghai
+
+  # 福建省 (Fujian Province)
+  fujian:
+    province_name: "福建省"
+    cities:
+      三明: "sanming"         # Sanming
+      南平: "nanping"         # Nanping
+      厦门: "xiamen"          # Xiamen
+      莆田: "putian"          # Putian
+      泉州: "quanzhou"        # Quanzhou
+      漳州: "zhangzhou"       # Zhangzhou
+      福州: "fuzhou"          # Fuzhou
+      龙岩: "longyan"         # Longyan
+      宁德: "ningde"          # Ningde
+
+  # 重庆市 (Chongqing Municipality)
+  chongqing:
+    province_name: "重庆市"
+    cities:
+      重庆: "chongqing"       # Chongqing
+
+  # 湖北省 (Hubei Province)
+  hubei:
+    province_name: "湖北省"
+    cities:
+      湖北: "hubei"           # Hubei (general)
+      仙桃: "xiantao"         # Xiantao
+
+# Alternative data sources for cities not supported by Lianjia
+alternative_sources:
+  # For smaller cities or those with limited Lianjia coverage
+  anjuke:
+    base_url: "https://www.anjuke.com"
+    supported_cities:
+      - "shaoguan"
+      - "maoming" 
+      - "meizhou"
+      - "shanwei"
+      - "heyuan"
+      - "yangjiang"
+      - "qingyuan"
+      - "chaozhou"
+      - "jieyang"
+      - "yunfu"
+      - "sanming"
+      - "nanping"
+      - "putian"
+      - "zhangzhou"
+      - "longyan"
+      - "ningde"
+      - "xiantao"
+
+  fang:
+    base_url: "https://www.fang.com"
+    supported_cities:
+      - "zhaoqing"
+      - "shantou"
+      - "zhanjiang"
+
+# Scraping priority configuration
+scraping_priority:
+  # Tier 1: Major cities with most data
+  tier1:
+    - "beijing"
+    - "shanghai"
+    - "shenzhen"
+    - "guangzhou"
+    - "chongqing"
+    
+  # Tier 2: Important regional centers
+  tier2:
+    - "xiamen"
+    - "fuzhou"
+    - "dongguan"
+    - "foshan"
+    - "zhuhai"
+    - "zhongshan"
+    - "huizhou"
+    
+  # Tier 3: Secondary cities
+  tier3:
+    - "jiangmen"
+    - "quanzhou"
+    - "zhangzhou"
+    - "putian"
+    - "shantou"
+    - "zhanjiang"
+    
+  # Tier 4: Smaller cities (may need alternative sources)
+  tier4:
+    - "shaoguan"
+    - "maoming"
+    - "meizhou"
+    - "shanwei"
+    - "heyuan"
+    - "yangjiang"
+    - "qingyuan"
+    - "chaozhou"
+    - "jieyang"
+    - "yunfu"
+    - "sanming"
+    - "nanping"
+    - "longyan"
+    - "ningde"
+    - "xiantao"

@@ -1,0 +1,16 @@
+{
+  "timestamp": "2025-08-22T17:15:51.713538",
+  "duration_seconds": 43.5,
+  "total_properties": 0,
+  "sources_scraped": 3,
+  "properties": [],
+  "summary": {
+    "by_city": {},
+    "by_source": {
+      "real_estate_news": 0,
+      "netease_regional": 0,
+      "sohu_focus": 0
+    },
+    "data_quality": "enhanced"
+  }
+}

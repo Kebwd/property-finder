@@ -1,0 +1,18 @@
+{
+  "timestamp": "2025-08-22T17:13:41.211770",
+  "duration_seconds": 19.8,
+  "total_properties": 0,
+  "unique_properties": 0,
+  "sites_scraped": 4,
+  "properties": [],
+  "summary": {
+    "sites": {
+      "fang_guangzhou": 0,
+      "fang_beijing": 0,
+      "fang_shanghai": 0,
+      "house_sina": 0
+    },
+    "total_raw": 0,
+    "duplicates_removed": 0
+  }
+}

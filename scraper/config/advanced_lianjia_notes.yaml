@@ -1,0 +1,42 @@
+# Enhanced Lianjia scraping approach with anti-bot measures
+# This is more complex but necessary for Lianjia
+
+enhanced_approach:
+  # 1. Rotating Proxies
+  proxy_rotation:
+    - Use services like Bright Data, ScraperAPI, or ProxyMesh
+    - Rotate IP addresses frequently
+    - Use residential proxies instead of datacenter IPs
+  
+  # 2. Browser Fingerprinting
+  browser_stealth:
+    - Use undetected-chromedriver instead of regular Selenium
+    - Randomize browser fingerprints
+    - Mimic real user behavior (mouse movements, scrolling)
+  
+  # 3. Session Management
+  session_handling:
+    - Maintain session cookies
+    - Handle login requirements
+    - Implement CAPTCHA solving (2captcha, Anti-Captcha)
+  
+  # 4. Rate Limiting
+  respectful_scraping:
+    - Long delays between requests (5-10 seconds)
+    - Random delays to avoid patterns
+    - Limit concurrent requests to 1
+  
+  # 5. Alternative Data Sources
+  easier_targets:
+    - 58.com (less strict anti-bot)
+    - Anjuke.com (alternative property site)
+    - Fang.com (real estate portal)
+    - Local government property databases
+
+# Implementation would require:
+additional_packages:
+  - undetected-chromedriver
+  - selenium-stealth  
+  - fake-useragent
+  - rotating-proxies
+  - captcha-solver

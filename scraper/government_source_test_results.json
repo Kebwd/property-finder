@@ -1,0 +1,22 @@
+{
+  "beijing": {
+    "status": "accessible",
+    "has_property_content": true,
+    "tables_count": 2,
+    "relevant_links": 35
+  },
+  "shanghai": {
+    "status": "request_error",
+    "error": "HTTPConnectionPool(host='www.fangdi.com.cn', port=80): Max retries exceeded with url: / (Caused by ConnectTimeoutError(<urllib3.connection.HTTPConnection object at 0x000001FF11193E10>, 'Connection to www.fangdi.com.cn timed out. (connect timeout=10)'))"
+  },
+  "shenzhen": {
+    "status": "request_error",
+    "error": "HTTPConnectionPool(host='www.szpl.gov.cn', port=80): Max retries exceeded with url: / (Caused by NameResolutionError(\"<urllib3.connection.HTTPConnection object at 0x000001FF111A6110>: Failed to resolve 'www.szpl.gov.cn' ([Errno 11001] getaddrinfo failed)\"))"
+  },
+  "guangzhou": {
+    "status": "accessible",
+    "has_property_content": true,
+    "tables_count": 0,
+    "relevant_links": 98
+  }
+}
