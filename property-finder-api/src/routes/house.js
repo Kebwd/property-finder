@@ -100,7 +100,7 @@ router.get('/search', async (req, res, next) => {
     const sql = `
       SELECT 
         h.id, h.type, h.estate_name_zh, h.flat, h.building_name_zh, h.floor, h.unit, 
-        h.area, h.house_type, h.deal_price, h.deal_date, h.developer,
+        h.area, h.house_type, h.deal_price, h.deal_date, h.developer, h.source_url,
         l.province, l.city, l.country, l.town, l.street, l.road,
         ST_Distance(
           l.geom::geography,
@@ -130,7 +130,7 @@ router.post('/', async (req, res) => {
   const { 
     type,
     province, city, country, town, street, road,
-    building_name_zh, floor, unit, area, deal_price, deal_date, developer,
+    building_name_zh, floor, unit, area, deal_price, deal_date, developer, source_url,
     // house specific fields
     estate_name_zh, flat, house_type
   } = req.body;
@@ -182,9 +182,9 @@ router.post('/', async (req, res) => {
       insertSQL = `
         INSERT INTO house (
           type, estate_name_zh, flat, building_name_zh, floor, unit,
-          area, house_type, deal_price, deal_date, developer, location_id
+          area, house_type, deal_price, deal_date, developer, source_url, location_id
         ) VALUES (
-          $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12
+          $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13
         )
         RETURNING *;
       `;
@@ -200,6 +200,7 @@ router.post('/', async (req, res) => {
         deal_price,
         deal_date,
         developer,
+        source_url,
         location.id
       ];
     } else {

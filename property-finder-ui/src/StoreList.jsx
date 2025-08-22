@@ -64,14 +64,31 @@ export default function StoreList({
           >
             <div>
               <h3 className="text-xl font-semibold">
-                {store.name || '—'}
+                {store.building_name_zh || '—'}
               </h3>
               <p className="text-gray-600">
-                {store.address || '—'}
+                {[store.street, store.city, store.country].filter(Boolean).join(', ') || '—'}
+              </p>
+              <p className="text-gray-700">
+                {store.floor && `Floor: ${store.floor}`} 
+                {store.unit && ` Unit: ${store.unit}`}
+                {store.area && ` | Area: ${store.area} sq ft`}
               </p>
               <p className="text-gray-700">
                 {dateStr} — {priceStr}
               </p>
+              {store.source_url && (
+                <p className="text-blue-600 text-sm">
+                  <a 
+                    href={`https://www.midlandici.com.hk${store.source_url}`} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="hover:underline"
+                  >
+                    View Source →
+                  </a>
+                </p>
+              )}
             </div>
             <span className="text-sm text-gray-500">
               {distStr}
