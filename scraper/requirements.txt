@@ -6,4 +6,3 @@ PyYAML>=6.0
 python-dotenv>=1.0.0
 # Browser automation for JavaScript sites
 selenium>=4.15.0
-scrapy-selenium>=0.4.2
