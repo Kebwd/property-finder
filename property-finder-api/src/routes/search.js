@@ -118,7 +118,21 @@ router.get('/all', async (req, res, next) => {
     `;
 
     const { rows } = await pool.query(sql, params);
-    res.json(rows);
+    // Add fallback: for house, if estate_name_zh is null, use building_name_zh as name
+    const result = rows.map(row => {
+      if (row.deal_type === 'house') {
+        return {
+          ...row,
+          name: row.estate_name_zh || row.building_name_zh || null
+        };
+      } else {
+        return {
+          ...row,
+          name: row.building_name_zh || null
+        };
+      }
+    });
+    res.json(result);
 
   } catch (err) {
     console.error('Search error:', err);
