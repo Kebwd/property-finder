@@ -1,5 +1,12 @@
 import scrapy
-from scrapy_selenium import SeleniumRequest
+try:
+    from scrapy_selenium import SeleniumRequest
+    SELENIUM_AVAILABLE = True
+except ImportError:
+    print("⚠️ scrapy-selenium not available. Install with: pip install scrapy-selenium")
+    SELENIUM_AVAILABLE = False
+    SeleniumRequest = None
+
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC

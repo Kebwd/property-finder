@@ -162,16 +162,26 @@ class SimpleAntiBot:
     def is_blocked(self, response):
         """Check if response indicates blocking"""
         
+        # Handle both requests.Response and Scrapy Response objects
+        status_code = getattr(response, 'status_code', None) or getattr(response, 'status', None)
+        
         # Check status codes
-        if response.status_code in [403, 429, 503]:
+        if status_code in [403, 429, 503]:
             return True
         
         # For successful status codes, check content
-        if response.status_code != 200:
+        if status_code != 200:
+            return False
+        
+        # Get response text/content
+        if hasattr(response, 'text'):
+            content = response.text.lower()
+        elif hasattr(response, 'body'):
+            content = response.body.decode('utf-8', errors='ignore').lower()
+        else:
             return False
         
         # Check for blocking keywords in content
-        content = response.text.lower()
         blocking_keywords = [
             'access denied', 'forbidden', 'captcha', '验证码', 
             '人机验证', 'robot', 'blocked', 'temporarily unavailable',
