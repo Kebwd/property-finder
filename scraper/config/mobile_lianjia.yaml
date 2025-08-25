@@ -1,0 +1,154 @@
+"""
+Mobile Lianjia Configuration - Based on CaoZ/Fast-LianJia-Crawler
+Uses official mobile API endpoints and authentication
+"""
+
+spider_name: mobile_lianjia
+
+# Mobile API Configuration (from CaoZ project)
+mobile_config:
+  user_agent: "HomeLink7.7.6; Android 7.0"
+  app_id: "20161001_android"
+  app_secret: "7df91ff794c67caee14c3dacd5549b35"
+  
+# API Endpoints
+api_endpoints:
+  city_info: "http://app.api.lianjia.com/config/config/initData"
+  community_search: "http://app.api.lianjia.com/house/community/search"
+  community_details: "https://m.lianjia.com/{city_abbr}/xiaoqu/{community_id}/pinzhi"
+
+# Supported Cities (with official city IDs from Lianjia API)
+cities:
+  beijing:
+    id: 110000
+    abbr: "bj"
+    name: "北京"
+    
+  shanghai:
+    id: 310000
+    abbr: "sh"
+    name: "上海"
+    
+  guangzhou:
+    id: 440100
+    abbr: "gz"
+    name: "广州"
+    
+  shenzhen:
+    id: 440300
+    abbr: "sz"
+    name: "深圳"
+    
+  chengdu:
+    id: 510100
+    abbr: "cd"
+    name: "成都"
+    
+  hangzhou:
+    id: 330100
+    abbr: "hz"
+    name: "杭州"
+    
+  wuhan:
+    id: 420100
+    abbr: "wh"
+    name: "武汉"
+    
+  chongqing:
+    id: 500000
+    abbr: "cq"
+    name: "重庆"
+    
+  nanjing:
+    id: 320100
+    abbr: "nj"
+    name: "南京"
+    
+  tianjin:
+    id: 120000
+    abbr: "tj"
+    name: "天津"
+
+# Crawling Modes
+modes:
+  communities: "Basic community information via mobile API"
+  details: "Communities + detailed property information"
+  houses: "Individual house listings (ershoufang)"
+
+# Rate Limiting (Mobile API is more generous)
+rate_limiting:
+  delay: 0.5  # Much faster than web scraping
+  randomize_delay: 0.3
+  concurrent_requests: 8  # Higher concurrency allowed
+  
+# Request Settings
+request_settings:
+  download_timeout: 30
+  retry_times: 3
+  retry_http_codes: [500, 502, 503, 504, 408, 429]
+
+# Data Field Mappings
+field_mappings:
+  # City data
+  city:
+    id: "city_id"
+    name: "city_name"
+    abbreviation: "city_abbr"
+    districts_count: "districts_count"
+    
+  # District data
+  district:
+    id: "district_id"
+    name: "district_name"
+    pinyin: "district_quanpin"
+    biz_circles_count: "biz_circles_count"
+    
+  # Business Circle data
+  biz_circle:
+    id: "biz_circle_id"
+    name: "biz_circle_name"
+    pinyin: "biz_circle_quanpin"
+    
+  # Community data
+  community:
+    id: "community_id"
+    name: "community_name"
+    building_year: "building_finish_year"
+    building_type: "building_type"
+    house_count: "second_hand_quantity"
+    avg_price: "second_hand_unit_price"
+
+# Success Indicators
+success_indicators:
+  api_response:
+    - "errno"
+    - "data"
+  
+  community_page:
+    - "hdic_key"
+    - "hdic_value"
+    - "小区"
+
+# Error Handling
+error_handling:
+  api_errors:
+    - "errno"
+    - "error"
+  
+  blocked_indicators:
+    - "验证码"
+    - "captcha"
+    - "blocked"
+    - "人机验证"
+
+# Output Settings
+output:
+  format: "json"
+  include_metadata: true
+  timestamp_format: "%Y-%m-%d %H:%M:%S"
+  
+# Authentication Test
+auth_test:
+  endpoint: "http://app.api.lianjia.com/config/config/initData"
+  city_id: 110000  # Beijing
+  expected_fields: ["city_info", "city_config_all"]

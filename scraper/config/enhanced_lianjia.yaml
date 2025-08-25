@@ -1,0 +1,263 @@
+# Enhanced Lianjia Configuration
+# Based on waugustus/lianjia-spider project with ScraperAPI integration
+
+# Supported cities and their configurations
+cities:
+  beijing:
+    name: "北京"
+    name_en: "Beijing"
+    province: "北京市"
+    host: "https://bj.lianjia.com"
+    ershoufang_url: "https://bj.lianjia.com/ershoufang"
+    zufang_url: "https://bj.lianjia.com/zufang"
+    districts:
+      - "朝阳"
+      - "海淀" 
+      - "西城"
+      - "东城"
+      - "丰台"
+      - "石景山"
+      - "通州"
+      - "昌平"
+      - "大兴"
+      - "亦庄开发区"
+      - "顺义"
+      - "房山"
+      - "门头沟"
+      - "平谷"
+      - "密云"
+      - "怀柔"
+      - "延庆"
+
+  shanghai:
+    name: "上海"
+    name_en: "Shanghai"
+    province: "上海市"
+    host: "https://sh.lianjia.com"
+    ershoufang_url: "https://sh.lianjia.com/ershoufang"
+    zufang_url: "https://sh.lianjia.com/zufang"
+    districts:
+      - "浦东"
+      - "黄浦"
+      - "徐汇"
+      - "长宁"
+      - "静安"
+      - "普陀"
+      - "虹口"
+      - "杨浦"
+      - "闵行"
+      - "宝山"
+      - "嘉定"
+      - "金山"
+      - "松江"
+      - "青浦"
+      - "奉贤"
+      - "崇明"
+
+  guangzhou:
+    name: "广州"
+    name_en: "Guangzhou"
+    province: "广东省"
+    host: "https://gz.lianjia.com"
+    ershoufang_url: "https://gz.lianjia.com/ershoufang"
+    zufang_url: "https://gz.lianjia.com/zufang"
+    districts:
+      - "天河"
+      - "越秀"
+      - "荔湾"
+      - "海珠"
+      - "白云"
+      - "黄埔"
+      - "番禺"
+      - "花都"
+      - "南沙"
+      - "从化"
+      - "增城"
+
+  shenzhen:
+    name: "深圳"
+    name_en: "Shenzhen"
+    province: "广东省"
+    host: "https://sz.lianjia.com"
+    ershoufang_url: "https://sz.lianjia.com/ershoufang"
+    zufang_url: "https://sz.lianjia.com/zufang"
+    districts:
+      - "南山"
+      - "福田"
+      - "罗湖"
+      - "盐田"
+      - "宝安"
+      - "龙岗"
+      - "龙华"
+      - "坪山"
+      - "光明"
+      - "大鹏新区"
+
+  chongqing:
+    name: "重庆"
+    name_en: "Chongqing"
+    province: "重庆市"
+    host: "https://cq.lianjia.com"
+    ershoufang_url: "https://cq.lianjia.com/ershoufang"
+    zufang_url: "https://cq.lianjia.com/zufang"
+    districts:
+      - "渝中"
+      - "江北"
+      - "南岸"
+      - "九龙坡"
+      - "沙坪坝"
+      - "大渡口"
+      - "渝北"
+      - "巴南"
+      - "北碚"
+      - "万州"
+      - "涪陵"
+      - "黔江"
+
+# House type filters (based on waugustus project)
+house_types:
+  l1: "一居"    # 1 bedroom
+  l2: "二居"    # 2 bedrooms  
+  l3: "三居"    # 3 bedrooms
+  l4: "四居"    # 4 bedrooms
+  l5: "五居"    # 5 bedrooms
+  l6: "五居以上" # 5+ bedrooms
+
+# Common filter combinations
+common_filters:
+  small_apartments: "l1l2"      # 1-2 bedrooms
+  family_units: "l2l3l4"       # 2-4 bedrooms  
+  large_units: "l4l5l6"        # 4+ bedrooms
+  all_types: "l1l2l3l4l5l6"    # All types
+
+# Property type mappings
+property_types:
+  住宅: "residential"
+  公寓: "apartment"
+  别墅: "villa"
+  写字楼: "office"
+  商铺: "shop"
+  厂房: "factory"
+  仓库: "warehouse"
+
+# Price ranges (in 万元)
+price_ranges:
+  budget:
+    min: 0
+    max: 200
+    description: "经济型 (200万以下)"
+  
+  standard:
+    min: 200
+    max: 500
+    description: "标准型 (200-500万)"
+    
+  premium:
+    min: 500
+    max: 1000
+    description: "高端型 (500-1000万)"
+    
+  luxury:
+    min: 1000
+    max: 0  # 0 means no upper limit
+    description: "豪宅型 (1000万以上)"
+
+# Scraping configuration
+scraping:
+  max_pages: 100
+  delay_between_requests: 1-3  # seconds
+  delay_between_pages: 2-5     # seconds
+  concurrent_requests: 1
+  
+  # Error handling
+  max_retries: 3
+  retry_delay: 2-5  # seconds
+  
+  # Success indicators
+  success_indicators:
+    - "sellListContent"
+    - "resblock-info"
+    - "totalPrice"
+    - "unitPrice"
+  
+  # Blocking indicators
+  blocking_indicators:
+    - "验证"
+    - "captcha"
+    - "verify"
+    - "blocked"
+    - "人机验证"
+    - "安全验证"
+    - "访问受限"
+
+# Database field mappings (to match your existing schema)
+field_mappings:
+  # Core identification
+  house_id: "house_id"
+  building_name_zh: "building_name_zh"
+  title: "title"
+  
+  # Location
+  zone: "zone"
+  city: "city"
+  province: "province"
+  district: "district"
+  location: "location"
+  area: "area"
+  
+  # Property details
+  type: "type"
+  type_raw: "type_raw"
+  size: "size"
+  floor: "floor"
+  orientation: "orientation"
+  year_built: "year_built"
+  building_type: "building_type"
+  
+  # Price
+  deal_price: "deal_price"
+  price_per_sqm: "price_per_sqm"
+  deal_date: "deal_date"
+  
+  # Source
+  source_url: "source_url"
+  start_url: "start_url"
+  developer: "developer"
+  status: "status"
+
+# Usage examples (based on waugustus project)
+usage_examples:
+  
+  # Basic city scraping
+  basic_beijing: 
+    command: "scrapy crawl enhanced_lianjia -a city=beijing"
+    description: "Scrape Beijing properties with default settings"
+  
+  # Specific district  
+  specific_district:
+    command: "scrapy crawl enhanced_lianjia -a city=beijing -a district=朝阳"
+    description: "Scrape Beijing Chaoyang district properties"
+  
+  # Price range filtering
+  price_filtered:
+    command: "scrapy crawl enhanced_lianjia -a city=shanghai -a min_price=300 -a max_price=800"
+    description: "Scrape Shanghai properties between 300-800万"
+  
+  # House type filtering
+  house_type_filtered:
+    command: "scrapy crawl enhanced_lianjia -a city=guangzhou -a house_type=l2l3"
+    description: "Scrape Guangzhou 2-3 bedroom properties"
+  
+  # Combined filters
+  combined_filters:
+    command: "scrapy crawl enhanced_lianjia -a city=shenzhen -a district=南山 -a min_price=500 -a max_price=1000 -a house_type=l3l4"
+    description: "Scrape Shenzhen Nanshan 3-4 bedroom properties 500-1000万"
+
+# Integration notes
+integration:
+  scraperapi: "Spider automatically uses ScraperAPI through existing middleware"
+  database: "Data format matches existing property-finder database schema"
+  monitoring: "Compatible with existing daily_scraper automation"
+  
+# Based on: https://github.com/waugustus/lianjia-spider
+# Enhanced for: ScraperAPI integration, Better error handling, Database compatibility
