@@ -6,6 +6,12 @@
 # === PREMIUM PROXIES (RECOMMENDED) ===
 # Uncomment and add your premium proxy credentials:
 
+# ScraperAPI - HTTP proxy format (username:password@host:port)
+scraperapi:b462bc754d65dad46e73652975fd308c@proxy-server.scraperapi.com:8001
+
+# Alternative ScraperAPI format for testing
+# scraperapi.b462bc754d65dad46e73652975fd308c:@proxy-server.scraperapi.com:8001
+
 # Bright Data (Luminati) - High success rate
 # customer-username-session-rand123:password@zproxy.lum-superproxy.io:22225
 # customer-username-session-rand124:password@zproxy.lum-superproxy.io:22225
@@ -51,3 +57,4 @@
 # (Note: Public proxies are unreliable and not recommended for production)
 # 8.8.8.8:8080
 # 1.1.1.1:8080
+https://124.6.51.226:8099
