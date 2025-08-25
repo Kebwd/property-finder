@@ -26,10 +26,10 @@ class SimpleAntiBot:
         self.block_count = 0
         self.last_request_time = 0
         
-        # ScraperAPI optimized settings - minimal delays since proxy handles rotation
-        self.base_delay = 2  # Reduced for ScraperAPI (proxy handles anti-bot)
+        # ScraperAPI fast operation settings - very minimal delays
+        self.base_delay = 1  # Minimal delay - ScraperAPI handles timing
         self.current_delay = self.base_delay
-        self.max_delay = 15  # Reduced max delay
+        self.max_delay = 8   # Much lower max delay for faster operation
         self.consecutive_failures = 0
         
         # Realistic browser session
@@ -90,21 +90,21 @@ class SimpleAntiBot:
         self.request_count = 0
     
     def smart_delay(self):
-        """Implement smart, human-like delays"""
+        """Fast delays optimized for ScraperAPI"""
         
         # Calculate time since last request
         now = time.time()
         time_since_last = now - self.last_request_time
         
-        # Base delay with random variation
-        delay = random.uniform(self.current_delay * 0.8, self.current_delay * 1.2)
+        # Minimal delay with small variation for ScraperAPI
+        delay = random.uniform(self.current_delay * 0.5, self.current_delay * 1.0)
         
-        # Add extra randomness
-        if random.random() < 0.1:  # 10% chance of longer delay
-            delay += random.uniform(5, 15)
+        # Reduced extra randomness for faster operation
+        if random.random() < 0.05:  # 5% chance of slightly longer delay
+            delay += random.uniform(1, 3)  # Much shorter random delays
         
-        # Ensure minimum time between requests
-        min_delay = 3
+        # Minimal time between requests
+        min_delay = 0.5  # Reduced from 3 seconds to 0.5 seconds
         if time_since_last < min_delay:
             delay += (min_delay - time_since_last)
         
@@ -205,8 +205,8 @@ class SimpleAntiBot:
         # Force session refresh
         self.refresh_session()
         
-        # Extended delay
-        extended_delay = random.uniform(60, 180)  # 1-3 minutes
+        # Reduced delay for faster retry with ScraperAPI
+        extended_delay = random.uniform(10, 30)  # Reduced from 60-180 to 10-30 seconds
         self.logger.info(f"😴 Sleeping for {extended_delay:.0f} seconds due to blocking")
         time.sleep(extended_delay)
     

@@ -63,13 +63,13 @@ def run_daily_scrape(mode="daily", enable_database=True, spider_name="house_spid
     print(f"\\n🚀 Running command: {' '.join(cmd)}")
     
     try:
-        # Run the spider
+        # Run the spider with reduced timeout for faster response
         result = subprocess.run(
             cmd, 
             cwd=Path(__file__).parent,
             capture_output=True, 
             text=True, 
-            timeout=300  # 5 minute timeout
+            timeout=120  # Reduced to 2 minute timeout for faster feedback
         )
         
         # Check results
@@ -132,7 +132,7 @@ def run_daily_scrape(mode="daily", enable_database=True, spider_name="house_spid
             return False
             
     except subprocess.TimeoutExpired:
-        print("❌ Spider timed out (>5 minutes)")
+        print("❌ Spider timed out (>2 minutes) - site may be unresponsive")
         return False
     except Exception as e:
         print(f"❌ Unexpected error: {e}")

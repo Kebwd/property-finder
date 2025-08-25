@@ -33,20 +33,20 @@ def run_spider(spider_name, mode="daily", delay_between=300):
         "-L", "INFO",
         "-o", json_file,
         "--logfile", log_file,
-        # Anti-bot settings
+        # Fast operation settings optimized for ScraperAPI
         "-s", "DOWNLOAD_DELAY=0",  # Let anti-bot middleware handle delays
         "-s", "CONCURRENT_REQUESTS=1",
         "-s", "AUTOTHROTTLE_ENABLED=True",
-        "-s", "AUTOTHROTTLE_TARGET_CONCURRENCY=0.3",
-        "-s", "RETRY_TIMES=8",
-        "-s", "DOWNLOAD_TIMEOUT=30"
+        "-s", "AUTOTHROTTLE_TARGET_CONCURRENCY=0.5",
+        "-s", "RETRY_TIMES=3",      # Reduced retries for faster operation
+        "-s", "DOWNLOAD_TIMEOUT=15" # Reduced timeout for faster response
     ]
     
     print(f"🚀 Command: {' '.join(cmd)}")
     
     try:
-        # Run the spider
-        result = subprocess.run(cmd, capture_output=True, text=True, cwd=os.getcwd())
+        # Run the spider with reduced timeout for faster feedback
+        result = subprocess.run(cmd, capture_output=True, text=True, cwd=os.getcwd(), timeout=90)
         
         if result.returncode == 0:
             print(f"✅ {spider_name} completed successfully!")
@@ -153,7 +153,7 @@ def main():
     total_spiders = 2
     
     # Run house spider first
-    if run_spider("house_spider", mode="daily", delay_between=300):
+    if run_spider("house_spider", mode="daily", delay_between=60):  # Reduced from 300 to 60 seconds
         success_count += 1
     
     # Run store spider second  

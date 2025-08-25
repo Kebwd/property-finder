@@ -83,16 +83,16 @@ AUTOTHROTTLE_MAX_DELAY = 10      # Lower max delay for premium proxy
 AUTOTHROTTLE_TARGET_CONCURRENCY = 0.8  # Higher concurrency with reliable proxy
 AUTOTHROTTLE_DEBUG = True        # Show throttling stats
 
-# Conservative retry settings for ScraperAPI (it handles retries internally)
-RETRY_TIMES = 8                  # Fewer retries since ScraperAPI is reliable
+# Fast and efficient retry settings for ScraperAPI
+RETRY_TIMES = 3                  # Reduced from 8 - fail fast with premium proxy
 RETRY_HTTP_CODES = [500, 502, 503, 504, 408, 429, 403, 407, 401]  # Include common errors
 
 # Session management
 COOKIES_ENABLED = True
 COOKIES_DEBUG = False
 
-# Extended timeouts for ScraperAPI requests
-DOWNLOAD_TIMEOUT = 30            # Reasonable timeout for ScraperAPI
+# Reduced timeouts for faster response
+DOWNLOAD_TIMEOUT = 15            # Reduced from 30 - fail fast approach
 DOWNLOAD_DELAY_EXPOSURE_RANDOMIZE = False  # Consistent timing with ScraperAPI
 
 # ScraperAPI-specific settings
