@@ -70,35 +70,35 @@ DOWNLOADER_MIDDLEWARES = {
     "scrapy_selenium.SeleniumMiddleware": 800,
 }
 
-# Optimized settings for proxy + anti-bot success
-CONCURRENT_REQUESTS = 3          # Increased concurrency with proxies
-CONCURRENT_REQUESTS_PER_DOMAIN = 2  # Multiple requests per domain with different proxies
-DOWNLOAD_DELAY = 0               # Managed by ScrapySimpleAntiBot
-RANDOMIZE_DOWNLOAD_DELAY = 0     # Managed by ScrapySimpleAntiBot
+# ScraperAPI Optimized settings for maximum success
+CONCURRENT_REQUESTS = 1          # Conservative with premium proxy
+CONCURRENT_REQUESTS_PER_DOMAIN = 1  # Single request per domain (ScraperAPI handles rotation)
+DOWNLOAD_DELAY = 0               # Let ScraperAPI handle timing
+RANDOMIZE_DOWNLOAD_DELAY = 0     # ScraperAPI manages request timing
 
-# AutoThrottle for intelligent proxy management
+# AutoThrottle optimized for ScraperAPI
 AUTOTHROTTLE_ENABLED = True
-AUTOTHROTTLE_START_DELAY = 3     # Faster start with proxies
-AUTOTHROTTLE_MAX_DELAY = 30      # Lower max delay
-AUTOTHROTTLE_TARGET_CONCURRENCY = 0.5  # Higher concurrency with proxies
+AUTOTHROTTLE_START_DELAY = 1     # Fast start with ScraperAPI
+AUTOTHROTTLE_MAX_DELAY = 10      # Lower max delay for premium proxy
+AUTOTHROTTLE_TARGET_CONCURRENCY = 0.8  # Higher concurrency with reliable proxy
 AUTOTHROTTLE_DEBUG = True        # Show throttling stats
 
-# Aggressive retry for maximum success with proxies
-RETRY_TIMES = 15                 # More retries with proxy rotation
-RETRY_HTTP_CODES = [500, 502, 503, 504, 408, 429, 403, 407, 401]  # Include proxy errors
+# Conservative retry settings for ScraperAPI (it handles retries internally)
+RETRY_TIMES = 8                  # Fewer retries since ScraperAPI is reliable
+RETRY_HTTP_CODES = [500, 502, 503, 504, 408, 429, 403, 407, 401]  # Include common errors
 
 # Session management
 COOKIES_ENABLED = True
 COOKIES_DEBUG = False
 
-# Extended timeouts for proxy requests
-DOWNLOAD_TIMEOUT = 45            # Longer timeout for proxy requests
-DOWNLOAD_DELAY_EXPOSURE_RANDOMIZE = True
+# Extended timeouts for ScraperAPI requests
+DOWNLOAD_TIMEOUT = 30            # Reasonable timeout for ScraperAPI
+DOWNLOAD_DELAY_EXPOSURE_RANDOMIZE = False  # Consistent timing with ScraperAPI
 
-# Proxy-specific settings
-PROXY_POOL_SIZE = 20            # Number of proxies to keep active
-PROXY_HEALTH_CHECK_INTERVAL = 50  # Check proxy health every N requests
-PROXY_MAX_FAILURES = 3         # Remove proxy after N failures
+# ScraperAPI-specific settings
+PROXY_POOL_SIZE = 1             # Only one ScraperAPI proxy needed
+PROXY_HEALTH_CHECK_INTERVAL = 100  # Less frequent health checks for reliable proxy
+PROXY_MAX_FAILURES = 5         # More tolerance for ScraperAPI temporary issues
 
 # Selenium configuration for Lianjia spider with anti-detection
 from selenium import webdriver

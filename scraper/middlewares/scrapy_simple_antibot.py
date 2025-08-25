@@ -26,14 +26,14 @@ class ScrapySimpleAntiBot:
         if SIMPLE_ANTIBOT_AVAILABLE:
             self.antibot = simple_antibot
             self.use_antibot = True
-            self.logger.info("✅ Simple AntiBot loaded - effective protection enabled")
+            self.logger.info("✅ Simple AntiBot loaded - ScraperAPI optimized mode")
         else:
             self.use_antibot = False
-            self.logger.warning("⚠️ Simple AntiBot not available - using basic protection")
+            self.logger.warning("⚠️ Simple AntiBot not available - using ScraperAPI-only protection")
             
-            # Fallback settings
+            # ScraperAPI optimized fallback settings
             self.request_count = 0
-            self.base_delay = 8
+            self.base_delay = 1  # Minimal delay for ScraperAPI
             self.user_agents = [
                 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
                 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/121.0',

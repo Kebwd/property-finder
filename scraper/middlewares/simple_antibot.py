@@ -26,18 +26,18 @@ class SimpleAntiBot:
         self.block_count = 0
         self.last_request_time = 0
         
-        # Adaptive settings
-        self.base_delay = 8  # Start with 8 seconds
+        # ScraperAPI optimized settings - minimal delays since proxy handles rotation
+        self.base_delay = 2  # Reduced for ScraperAPI (proxy handles anti-bot)
         self.current_delay = self.base_delay
-        self.max_delay = 60
+        self.max_delay = 15  # Reduced max delay
         self.consecutive_failures = 0
         
         # Realistic browser session
         self.setup_browser_session()
         
-        # Track session duration
+        # Track session duration - shorter for ScraperAPI
         self.session_start = datetime.now()
-        self.session_duration = random.randint(30, 60)  # Refresh session every 30-60 requests
+        self.session_duration = random.randint(20, 40)  # Refresh session every 20-40 requests
     
     def setup_browser_session(self):
         """Setup realistic browser session"""

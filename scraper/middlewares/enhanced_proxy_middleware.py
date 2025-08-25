@@ -50,20 +50,24 @@ class EnhancedProxyMiddleware:
         self.logger.info(f"📊 Loaded {len(self.working_proxies)} working proxies")
     
     def load_proxies(self):
-        """Load proxies from file and free proxy APIs"""
+        """Load proxies ONLY from proxy_list.txt - NO free proxies for ScraperAPI-only mode"""
         
-        # Load from proxy_list.txt
+        # Load from proxy_list.txt ONLY
         proxy_file = os.path.join(os.path.dirname(__file__), '..', 'proxy_list.txt')
         if os.path.exists(proxy_file):
             with open(proxy_file, 'r') as f:
                 for line in f:
                     line = line.strip()
-                    if line and not line.startswith('#'):
+                    if line and not line.startswith('#') and not line.startswith('https://'):
                         self.proxies.append(line)
         
-        # Load free proxies if no premium proxies configured
+        # DISABLED: No free proxy loading in ScraperAPI-only mode
+        # This ensures only premium ScraperAPI proxies are used
         if not self.proxies:
-            self.load_free_proxies()
+            self.logger.warning("⚠️ No premium proxies found in proxy_list.txt")
+            self.logger.info("🔧 ScraperAPI-only mode: Add your ScraperAPI credentials to proxy_list.txt")
+        else:
+            self.logger.info(f"🎯 ScraperAPI-only mode: Using {len(self.proxies)} premium proxies")
         
         self.logger.info(f"📋 Loaded {len(self.proxies)} proxies from configuration")
     

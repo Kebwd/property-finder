@@ -4,57 +4,28 @@
 # Lines starting with # are comments
 
 # === PREMIUM PROXIES (RECOMMENDED) ===
-# Uncomment and add your premium proxy credentials:
+# ONLY ScraperAPI - Enhanced parameters for tough sites
 
-# ScraperAPI - HTTP proxy format (username:password@host:port)
+# ScraperAPI with enhanced anti-detection (render=true for JS sites)
 scraperapi:b462bc754d65dad46e73652975fd308c@proxy-server.scraperapi.com:8001
 
-# Alternative ScraperAPI format for testing
-# scraperapi.b462bc754d65dad46e73652975fd308c:@proxy-server.scraperapi.com:8001
+# ScraperAPI with JavaScript rendering for anti-bot sites
+# Format: scraperapi:API_KEY@render-js.scraperapi.com:8001
+# scraperapi:b462bc754d65dad46e73652975fd308c@render-js.scraperapi.com:8001
 
-# Bright Data (Luminati) - High success rate
-# customer-username-session-rand123:password@zproxy.lum-superproxy.io:22225
-# customer-username-session-rand124:password@zproxy.lum-superproxy.io:22225
+# ALL OTHER PROXIES DISABLED FOR SCRAPERAPI-ONLY MODE
 
-# Oxylabs - Reliable datacenter proxies
+# === DISABLED PROXIES ===
+# All other proxy services are commented out to use ONLY ScraperAPI
+
 # username:password@pr.oxylabs.io:10000
 # username:password@pr.oxylabs.io:10001
-
-# SmartProxy - Good for property sites
 # username:password@gate.smartproxy.com:10000
 # username:password@gate.smartproxy.com:10001
-
-# ProxyMesh - US-based proxies
 # username:password@us-wa.proxymesh.com:31280
 # username:password@us-ca.proxymesh.com:31280
-
-# === ROTATING RESIDENTIAL PROXIES (BEST PERFORMANCE) ===
-# These rotate automatically and are hardest to detect
-
-# Bright Data Residential
 # customer-username-session-sticky_session:password@zproxy.lum-superproxy.io:22225
 
-# === FREE PROXIES (AUTOMATICALLY LOADED) ===
-# The system will automatically fetch free proxies from public APIs
-# Note: Free proxies are less reliable but good for testing
-
-# === MANUAL FREE PROXIES ===
-# Add any known working free proxies here:
-# 8.8.8.8:8080
-# 192.168.1.1:3128
-# username:password@us.proxymesh.com:31280
-# username:password@jp.proxymesh.com:31280
-
-# SmartProxy (replace with your credentials)
-# username:password@rotating-residential.smartproxy.com:10000
-
-# Custom proxy servers
-# Add your own proxy servers here:
-# 192.168.1.100:8080
-# 10.0.0.1:3128
-
-# For testing purposes, you can add some public proxies:
-# (Note: Public proxies are unreliable and not recommended for production)
-# 8.8.8.8:8080
-# 1.1.1.1:8080
-https://124.6.51.226:8099
+# === FREE PROXIES DISABLED ===
+# Free proxies are disabled to ensure only ScraperAPI is used
+# https://124.6.51.226:8099
