@@ -12,8 +12,181 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 import logging
 
+# Import our consistent scraping manager
+try:
+    from .consistent_scraping import consistent_manager
+    CONSISTENT_SCRAPING_AVAILABLE = True
+except ImportError:
+    CONSISTENT_SCRAPING_AVAILABLE = False
+    logging.warning("Consistent scraping manager not available")
 
-class AntiBot:
+
+class ConsistentAntiBot:
+    """
+    Enhanced Anti-Bot middleware using consistent scraping manager
+    Provides maximum success rate with adaptive strategies
+    """
+    
+    def __init__(self, crawler):
+        self.crawler = crawler
+        self.settings = crawler.settings
+        self.logger = logging.getLogger(__name__)
+        
+        # Use consistent manager if available
+        if CONSISTENT_SCRAPING_AVAILABLE:
+            self.manager = consistent_manager
+            self.use_consistent_manager = True
+            self.logger.info("✅ Consistent scraping manager loaded - maximum anti-bot protection enabled")
+        else:
+            self.use_consistent_manager = False
+            self.logger.warning("⚠️  Consistent scraping manager not available - using fallback anti-bot")
+            
+            # Fallback configuration
+            self.request_count = 0
+            self.session = requests.Session()
+            self.base_delay = 8
+    
+    @classmethod
+    def from_crawler(cls, crawler):
+        middleware = cls(crawler)
+        crawler.signals.connect(middleware.spider_opened, signal=signals.spider_opened)
+        crawler.signals.connect(middleware.spider_closed, signal=signals.spider_closed)
+        return middleware
+    
+    def spider_opened(self, spider):
+        if self.use_consistent_manager:
+            self.logger.info(f"🚀 ConsistentAntiBot activated for {spider.name} with proxy pool and adaptive delays")
+        else:
+            self.logger.info(f"🛡️  FallbackAntiBot activated for {spider.name}")
+    
+    def spider_closed(self, spider):
+        if self.use_consistent_manager:
+            stats = self.manager.get_stats()
+            self.logger.info(f"📊 Final scraping stats:")
+            self.logger.info(f"   Success rate: {stats['success_rate']:.2%}")
+            self.logger.info(f"   Requests made: {stats['requests_made']}")
+            self.logger.info(f"   Proxy success rate: {stats['proxy_stats']['success_rate']:.2%}")
+    
+    def process_request(self, request, spider):
+        """Apply consistent anti-bot protection"""
+        
+        if self.use_consistent_manager:
+            # Use consistent manager for optimal protection
+            
+            # Add random jitter to delay
+            base_delay = self.manager.current_delay
+            jitter = random.uniform(-0.2, 0.2) * base_delay
+            delay = base_delay + jitter
+            
+            time.sleep(max(1, delay))
+            
+            # Set optimal headers (manager will handle user-agent)
+            enhanced_headers = {
+                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
+                'Accept-Language': 'zh-CN,zh;q=0.9,en;q=0.8',
+                'Accept-Encoding': 'gzip, deflate, br',
+                'DNT': '1',
+                'Connection': 'keep-alive',
+                'Upgrade-Insecure-Requests': '1',
+                'Sec-Fetch-Dest': 'document',
+                'Sec-Fetch-Mode': 'navigate',
+                'Sec-Fetch-Site': 'none',
+                'Sec-Fetch-User': '?1',
+                'Cache-Control': 'max-age=0',
+            }
+            
+            for key, value in enhanced_headers.items():
+                request.headers[key] = value
+            
+            # Get best proxy from pool
+            proxy = self.manager.proxy_pool.get_best_proxy()
+            if proxy:
+                request.meta['proxy'] = proxy
+                self.logger.debug(f"Using proxy: {proxy}")
+            
+        else:
+            # Fallback anti-bot protection
+            self.request_count += 1
+            
+            # Basic delay
+            delay = random.uniform(self.base_delay * 0.8, self.base_delay * 1.2)
+            time.sleep(delay)
+            
+            # Basic headers
+            request.headers['User-Agent'] = random.choice([
+                'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/121.0',
+                'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            ])
+        
+        return None
+    
+    def process_response(self, request, response, spider):
+        """Handle response with consistent anti-bot logic"""
+        
+        if self.use_consistent_manager:
+            # Use consistent manager's blocking detection
+            if self.manager.is_blocked_response(response):
+                self.logger.warning(f"🚫 Blocking detected: {request.url}")
+                
+                # Mark proxy as failed if used
+                proxy = request.meta.get('proxy')
+                if proxy:
+                    self.manager.proxy_pool.mark_proxy_failed(proxy)
+                
+                # Handle blocking
+                self.manager.handle_blocking()
+                
+                # Create retry request
+                return self._create_retry_request(request, "Consistent manager detected blocking")
+            
+            # Update success stats
+            self.manager.success_count += 1
+            
+        else:
+            # Fallback blocking detection
+            if self._is_blocked_response_fallback(response):
+                self.logger.warning(f"🚫 Fallback blocking detected: {request.url}")
+                return self._create_retry_request(request, "Fallback detected blocking")
+        
+        return response
+    
+    def _create_retry_request(self, request, reason):
+        """Create a retry request with updated settings"""
+        retries = request.meta.get('retry_times', 0) + 1
+        max_retries = self.crawler.settings.getint('RETRY_TIMES', 5)
+        
+        if retries <= max_retries:
+            retry_req = request.copy()
+            retry_req.meta['retry_times'] = retries
+            retry_req.dont_filter = True
+            
+            # Remove failed proxy
+            if 'proxy' in retry_req.meta:
+                del retry_req.meta['proxy']
+            
+            self.logger.info(f"🔄 Retrying {request.url} (attempt {retries}/{max_retries}) - {reason}")
+            return retry_req
+        else:
+            self.logger.error(f"❌ Max retries exceeded for {request.url}")
+            return None
+    
+    def _is_blocked_response_fallback(self, response):
+        """Fallback blocking detection"""
+        if response.status in [403, 429, 503]:
+            return True
+        
+        if len(response.body) < 1000:
+            return True
+        
+        content_lower = response.body.lower()
+        blocking_indicators = [
+            b'access denied', b'forbidden', b'captcha',
+            '验证码'.encode('utf-8'), '人机验证'.encode('utf-8'),
+            b'robot', b'blocked'
+        ]
+        
+        return any(indicator in content_lower for indicator in blocking_indicators)
     """
     Advanced Anti-Bot Middleware implementing multiple evasion techniques:
     1. Random delays between requests (30-60 requests intervals)

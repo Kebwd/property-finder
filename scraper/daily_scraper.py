@@ -11,7 +11,7 @@ from datetime import datetime
 from pathlib import Path
 import shutil
 
-def run_daily_scrape(mode="daily", enable_database=True):
+def run_daily_scrape(mode="daily", enable_database=True, spider_name="house_spider"):
     """Execute daily scraping with proper file management"""
     timestamp = datetime.now()
     date_str = timestamp.strftime("%Y-%m-%d")
@@ -20,14 +20,17 @@ def run_daily_scrape(mode="daily", enable_database=True):
     mode_suffix = f"_{mode}" if mode != "daily" else ""
     
     print(f"🕷️  {mode.upper()} SCRAPE STARTING: {timestamp.strftime('%Y-%m-%d %H:%M:%S')}")
+    print(f"🤖 Using spider: {spider_name}")
+    print(f"🛡️  Anti-bot protection: ENABLED")
     print("=" * 60)
     
     # Create daily output directory
     output_dir = Path("daily_output") / date_str
     output_dir.mkdir(parents=True, exist_ok=True)
     
-    # Define output files
-    json_output = output_dir / f"deals_{time_str}{mode_suffix}.json"
+    # Define output files based on spider type
+    spider_prefix = "houses" if spider_name == "house_spider" else "deals"
+    json_output = output_dir / f"{spider_prefix}_{time_str}{mode_suffix}.json"
     log_output = output_dir / f"scrape_{time_str}{mode_suffix}.log"
     
     print(f"📁 Output directory: {output_dir}")
@@ -36,13 +39,20 @@ def run_daily_scrape(mode="daily", enable_database=True):
     print(f"🔄 Monitoring mode: {mode}")
     print(f"💾 Database enabled: {enable_database}")
     
-    # Prepare scrapy command with mode parameter
+    # Prepare scrapy command with enhanced anti-bot settings
     cmd = [
-        sys.executable, "-m", "scrapy", "crawl", "store_spider",
+        sys.executable, "-m", "scrapy", "crawl", spider_name,
         "-a", f"mode={mode}",  # Pass mode to spider
         "-L", "INFO",
         "-o", str(json_output),
-        "--logfile", str(log_output)
+        "--logfile", str(log_output),
+        # Enhanced consistent anti-bot protection settings
+        "-s", "DOWNLOAD_DELAY=0",  # Managed by ConsistentAntiBot
+        "-s", "CONCURRENT_REQUESTS=1",
+        "-s", "AUTOTHROTTLE_ENABLED=True",
+        "-s", "AUTOTHROTTLE_TARGET_CONCURRENCY=0.3",
+        "-s", "RETRY_TIMES=8",  # More retries for consistent success
+        "-s", "DOWNLOAD_TIMEOUT=30"
     ]
     
     # Conditionally disable pipelines for testing
@@ -75,10 +85,15 @@ def run_daily_scrape(mode="daily", enable_database=True):
                         print(f"📊 New deals found: {item_count}")
                         
                         if item_count > 0:
-                            # Show sample data
+                            # Show sample data based on spider type
                             sample = data[0]
-                            print(f"🏢 Sample: {sample.get('building_name_zh', 'N/A')} - {sample.get('type_raw', 'N/A')}")
-                            print(f"💰 Price: {sample.get('deal_price', 'N/A')}")
+                            if spider_name == "house_spider":
+                                print(f"🏠 Sample: {sample.get('estate_name_zh', 'N/A')} - {sample.get('house_type', 'N/A')}")
+                                print(f"💰 Price: ¥{sample.get('deal_price', 'N/A'):,}")
+                                print(f"📐 Area: {sample.get('area', 'N/A')}㎡")
+                            else:
+                                print(f"🏢 Sample: {sample.get('building_name_zh', 'N/A')} - {sample.get('type_raw', 'N/A')}")
+                                print(f"💰 Price: {sample.get('deal_price', 'N/A')}")
                             print(f"📅 Date: {sample.get('deal_date', 'N/A')}")
                             
                             if enable_database:
@@ -198,7 +213,7 @@ def generate_daily_summary():
 
 def main():
     """Main execution function"""
-    print("🗓️  DAILY PROPERTY DEAL SCRAPER")
+    print("🗓️  DAILY PROPERTY SCRAPER WITH ANTI-BOT PROTECTION")
     print(f"📅 Date: {datetime.now().strftime('%A, %B %d, %Y')}")
     print(f"🕐 Time: {datetime.now().strftime('%H:%M:%S')}")
     
@@ -208,25 +223,37 @@ def main():
         print("Please run this script from the scraper directory")
         return False
     
-    # Check for command line arguments
+    # Parse command line arguments
     enable_database = "--no-db" not in sys.argv
     force_mode = None
+    spider_name = "house_spider"  # Default to house spider
+    
     for arg in sys.argv[1:]:
         if arg in ["daily", "weekly"]:
             force_mode = arg
+        elif arg in ["house_spider", "store_spider"]:
+            spider_name = arg
+        elif arg == "--houses":
+            spider_name = "house_spider"
+        elif arg == "--stores":
+            spider_name = "store_spider"
     
     # Determine if this is a weekly run (e.g., Sundays)
     is_sunday = datetime.now().weekday() == 6
     
+    print(f"🕷️  Selected spider: {spider_name}")
+    print(f"🛡️  Anti-bot protection: ENABLED")
+    print(f"💾 Database integration: {'ENABLED' if enable_database else 'DISABLED'}")
+    
     if force_mode:
         print(f"🔧 Mode override: {force_mode.upper()}")
-        success = run_daily_scrape(mode=force_mode, enable_database=enable_database)
+        success = run_daily_scrape(mode=force_mode, enable_database=enable_database, spider_name=spider_name)
     elif is_sunday:
         print("📅 Sunday detected - running WEEKLY comprehensive check")
-        success = run_daily_scrape(mode="weekly", enable_database=enable_database)
+        success = run_daily_scrape(mode="weekly", enable_database=enable_database, spider_name=spider_name)
     else:
         print("🗓️  Running DAILY new deals check")
-        success = run_daily_scrape(mode="daily", enable_database=enable_database)
+        success = run_daily_scrape(mode="daily", enable_database=enable_database, spider_name=spider_name)
     
     # Generate summary
     generate_daily_summary()
@@ -237,8 +264,16 @@ def main():
     # Final status
     if success:
         print("\\n🎉 Daily scraping completed successfully!")
+        print("\\n💡 Usage examples:")
+        print("  python daily_scraper.py --houses daily    # House spider with anti-bot protection")
+        print("  python daily_scraper.py --stores weekly   # Store spider comprehensive mode")
+        print("  python daily_scraper.py house_spider      # Direct spider name")
     else:
         print("\\n⚠️  Daily scraping completed with issues")
+        print("\\n🔧 Troubleshooting:")
+        print("  - Check if anti-bot protection is working properly")
+        print("  - Consider using proxy rotation for better success")
+        print("  - Increase delays if still getting blocked")
     
     return success
 

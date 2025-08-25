@@ -53,44 +53,52 @@ AUTOTHROTTLE_ENABLED = True  # Will be configured below
 # Enable or disable downloader middlewares
 # See https://docs.scrapy.org/en/latest/topics/downloader-middleware.html
 DOWNLOADER_MIDDLEWARES = {
-    # Anti-bot protection middlewares
-    "middlewares.anti_bot_middleware.AntiBot": 100,
-    "middlewares.anti_bot_middleware.ShadowUserAgentMiddleware": 200,
-    "middlewares.proxy_middleware.SmartProxyMiddleware": 300,
-    "middlewares.anti_bot_middleware.EnhancedRetryMiddleware": 400,
+    # Enhanced proxy middleware (highest priority)
+    "middlewares.enhanced_proxy_middleware.EnhancedProxyMiddleware": 100,
+    
+    # Simple but highly effective anti-bot protection
+    "middlewares.scrapy_simple_antibot.ScrapySimpleAntiBot": 200,
+    
+    # Enhanced retry with proxy-aware logic
+    "middlewares.enhanced_proxy_middleware.ProxyRetryMiddleware": 300,
+    
+    # Disable default retry middleware (replaced by our enhanced version)
+    "scrapy.downloadermiddlewares.retry.RetryMiddleware": None,
     
     # Existing middlewares
     "middlewares.selenium_middleware.SeleniumMiddleware": 543,
     "scrapy_selenium.SeleniumMiddleware": 800,
 }
 
-# Anti-bot configuration
-CONCURRENT_REQUESTS = 1  # Reduced to be more conservative
-CONCURRENT_REQUESTS_PER_DOMAIN = 1
-DOWNLOAD_DELAY = 3  # Base delay, anti-bot middleware will add more randomization
-RANDOMIZE_DOWNLOAD_DELAY = 0.5  # 50% randomization
+# Optimized settings for proxy + anti-bot success
+CONCURRENT_REQUESTS = 3          # Increased concurrency with proxies
+CONCURRENT_REQUESTS_PER_DOMAIN = 2  # Multiple requests per domain with different proxies
+DOWNLOAD_DELAY = 0               # Managed by ScrapySimpleAntiBot
+RANDOMIZE_DOWNLOAD_DELAY = 0     # Managed by ScrapySimpleAntiBot
 
-# Enable AutoThrottle for intelligent request throttling
+# AutoThrottle for intelligent proxy management
 AUTOTHROTTLE_ENABLED = True
-AUTOTHROTTLE_START_DELAY = 5
-AUTOTHROTTLE_MAX_DELAY = 60
-AUTOTHROTTLE_TARGET_CONCURRENCY = 0.5  # Very conservative
-AUTOTHROTTLE_DEBUG = True  # Enable to see throttling stats
+AUTOTHROTTLE_START_DELAY = 3     # Faster start with proxies
+AUTOTHROTTLE_MAX_DELAY = 30      # Lower max delay
+AUTOTHROTTLE_TARGET_CONCURRENCY = 0.5  # Higher concurrency with proxies
+AUTOTHROTTLE_DEBUG = True        # Show throttling stats
 
-# Retry configuration for anti-bot scenarios
-RETRY_TIMES = 5  # Increased retries for blocked requests
-RETRY_HTTP_CODES = [500, 502, 503, 504, 408, 429, 403]
+# Aggressive retry for maximum success with proxies
+RETRY_TIMES = 15                 # More retries with proxy rotation
+RETRY_HTTP_CODES = [500, 502, 503, 504, 408, 429, 403, 407, 401]  # Include proxy errors
 
-# Proxy configuration (optional - add your proxy list here)
-# PROXY_LIST = [
-#     'http://proxy1:port',
-#     'http://proxy2:port',
-# ]
-# PROXY_FILE = 'proxies.txt'  # Path to proxy file
-# USE_FREE_PROXIES = False  # Set to True to use free proxies (not recommended for production)
+# Session management
+COOKIES_ENABLED = True
+COOKIES_DEBUG = False
 
-# Cookies configuration
-COOKIES_ENABLED = True  # Enable cookies for session management
+# Extended timeouts for proxy requests
+DOWNLOAD_TIMEOUT = 45            # Longer timeout for proxy requests
+DOWNLOAD_DELAY_EXPOSURE_RANDOMIZE = True
+
+# Proxy-specific settings
+PROXY_POOL_SIZE = 20            # Number of proxies to keep active
+PROXY_HEALTH_CHECK_INTERVAL = 50  # Check proxy health every N requests
+PROXY_MAX_FAILURES = 3         # Remove proxy after N failures
 
 # Selenium configuration for Lianjia spider with anti-detection
 from selenium import webdriver
