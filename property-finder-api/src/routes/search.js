@@ -120,15 +120,17 @@ router.get('/all', async (req, res, next) => {
     const { rows } = await pool.query(sql, params);
     // Add fallback: for house, if estate_name_zh is null, use building_name_zh as name
     const result = rows.map(row => {
+      // Helper to treat empty string as null
+      const safe = v => (v && v.trim() ? v : null);
       if (row.deal_type === 'house') {
         return {
           ...row,
-          name: row.estate_name_zh || row.building_name_zh || null
+          name: safe(row.estate_name_zh) || safe(row.building_name_zh) || null
         };
       } else {
         return {
           ...row,
-          name: row.building_name_zh || null
+          name: safe(row.building_name_zh) || null
         };
       }
     });
