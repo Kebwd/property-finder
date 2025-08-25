@@ -253,31 +253,31 @@ export default function App() {
                     }
                   </div>
                 </div>
-                
+
                 <div className="property-name">
-                  {store.building_name_zh || store.estate_name_zh || 'UNNAMED PROPERTY'}
+                  {store.estate_name_zh || store.building_name_zh || 'UNNAMED PROPERTY'}
                 </div>
-                
+
                 <div className="property-details">
                   {store.flat && <span>座 {store.flat}</span>}
                   {store.floor && <span>樓 {store.floor}</span>}
                   {store.unit && <span>單位 {store.unit}</span>}
                 </div>
-                
+
                 <div className="price-section">
                   <div className="price">HK$ {Number(store.deal_price).toLocaleString()}</div>
                   <div className="area">{store.area} SQ FT</div>
                 </div>
-                
+
                 <div className="date-section">
                   {new Date(store.deal_date).toLocaleDateString()}
                 </div>
-                
+
                 <div className="location-section">
                   <div>{store.province} {store.city}</div>
                   <div>{store.town} {store.street}</div>
                 </div>
-                
+
                 {store.developer && (
                   <div className="developer-section">
                     DEVELOPER: {store.developer}
