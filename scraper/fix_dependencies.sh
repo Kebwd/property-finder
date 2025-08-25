@@ -5,7 +5,7 @@ echo "🔧 Installing missing dependencies for property scraper..."
 # Install scrapy-selenium if not available
 python -c "import scrapy_selenium" 2>/dev/null || {
     echo "📦 Installing scrapy-selenium..."
-    pip install scrapy-selenium>=1.7.0
+    pip install scrapy-selenium>=0.0.7
 }
 
 # Verify installation

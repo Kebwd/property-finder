@@ -6,10 +6,12 @@
 
 **Root Cause**: Missing `scrapy-selenium` dependency in requirements.txt and deployment environment
 
+**Version Issue**: Initially specified v1.7.0 but latest available is v0.0.7
+
 ## 🛠️ Fixes Applied
 
 ### 1. Updated Requirements
-- ✅ Added `scrapy-selenium>=1.7.0` to `requirements.txt`
+- ✅ Added `scrapy-selenium>=0.0.7` to `requirements.txt` (latest available version)
 - ✅ Made imports conditional in `alternative_property_spider.py`
 
 ### 2. Local Environment

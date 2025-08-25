@@ -5,7 +5,7 @@ echo 🔧 Installing missing dependencies for property scraper...
 REM Install scrapy-selenium if not available
 python -c "import scrapy_selenium" >nul 2>&1 || (
     echo 📦 Installing scrapy-selenium...
-    pip install scrapy-selenium>=1.7.0
+    pip install scrapy-selenium>=0.0.7
 )
 
 REM Verify installation

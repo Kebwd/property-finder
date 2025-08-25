@@ -35,8 +35,8 @@ jobs:
         pip install --upgrade pip
         pip cache purge
         pip install -r requirements.txt
-        # Ensure scrapy-selenium is installed
-        pip install scrapy-selenium>=1.7.0
+        # Ensure scrapy-selenium is installed with correct version
+        pip install scrapy-selenium>=0.0.7
         echo "✅ All dependencies installed"
         
     - name: Verify dependencies

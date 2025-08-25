@@ -1,6 +1,6 @@
 # Python dependencies for property scraper
 scrapy>=2.13.3
-scrapy-selenium>=1.7.0
+scrapy-selenium>=0.0.7
 psycopg2-binary>=2.9.6
 requests>=2.31.0
 PyYAML>=6.0
