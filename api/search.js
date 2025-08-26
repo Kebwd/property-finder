@@ -88,8 +88,10 @@ module.exports = async function handler(req, res) {
             'house' AS source,
             h.id,
             h.type,
-            h.estate_name_zh as name,
+            -- prefer estate_name_zh, fallback to building_name_zh when estate is empty
+            COALESCE(NULLIF(h.estate_name_zh, ''), NULLIF(h.building_name_zh, ''), h.building_name_zh) as name,
             h.estate_name_zh,
+            h.building_name_zh,
             h.floor,
             h.unit,
             h.area,
@@ -148,8 +150,10 @@ module.exports = async function handler(req, res) {
             'house' as source,
             h.id,
             h.type,
-            h.estate_name_zh as name,
+            -- prefer estate_name_zh, fallback to building_name_zh when estate is empty
+            COALESCE(NULLIF(h.estate_name_zh, ''), NULLIF(h.building_name_zh, ''), h.building_name_zh) as name,
             h.estate_name_zh,
+            h.building_name_zh,
             h.floor,
             h.unit,
             h.area,
