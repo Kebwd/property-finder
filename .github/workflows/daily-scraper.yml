@@ -26,6 +26,13 @@ jobs:
       run: |
         sudo apt-get update
         sudo apt-get install -y postgresql-client
+        # Install Chrome and dependencies for selenium
+        wget -q -O - https://dl.google.com/linux/linux_signing_key.pub | sudo apt-key add -
+        echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" | sudo tee /etc/apt/sources.list.d/google-chrome.list
+        sudo apt-get update
+        sudo apt-get install -y google-chrome-stable
+        # Install additional dependencies
+        sudo apt-get install -y xvfb
     
     - name: Install Python dependencies
       run: |
@@ -35,6 +42,8 @@ jobs:
         pip install --upgrade pip
         pip cache purge
         pip install -r requirements.txt
+        # Ensure additional dependencies are installed
+        pip install beautifulsoup4>=4.12.0 lxml>=4.9.0 aiohttp>=3.8.0
         # Ensure scrapy-selenium is installed with correct version
         pip install scrapy-selenium>=0.0.7
         echo "✅ All dependencies installed"
@@ -42,9 +51,9 @@ jobs:
     - name: Verify dependencies
       run: |
         cd scraper
-        python -c "from scrapy_selenium import SeleniumRequest; print('✅ scrapy-selenium ready')"
-        python -m scrapy list
-        echo "✅ All spiders loading correctly"
+        echo "Running comprehensive dependency check..."
+        python check_dependencies.py
+        echo "✅ All dependencies verified"
     
     - name: Create output directory
       run: |
@@ -56,8 +65,13 @@ jobs:
         DATABASE_URL: ${{ secrets.DATABASE_URL }}
         SCRAPER_MODE: daily
         LOG_LEVEL: INFO
+        # Chrome/Selenium settings for CI
+        DISPLAY: ":99"
+        CHROME_OPTIONS: "--headless --no-sandbox --disable-dev-shm-usage --disable-gpu"
       run: |
         cd scraper
+        # Start virtual display for Chrome
+        Xvfb :99 -screen 0 1024x768x24 > /dev/null 2>&1 &
         echo "Starting daily property scraper..."
         python daily_scraper.py
         echo "Scraper completed successfully!"

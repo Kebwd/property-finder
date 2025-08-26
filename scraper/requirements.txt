@@ -7,3 +7,10 @@ PyYAML>=6.0
 python-dotenv>=1.0.0
 # Browser automation for JavaScript sites
 selenium>=4.15.0
+# HTML parsing
+beautifulsoup4>=4.12.0
+lxml>=4.9.0
+# Async HTTP client
+aiohttp>=3.8.0
+# Additional useful packages
+urllib3>=1.26.0
