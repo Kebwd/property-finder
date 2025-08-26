@@ -130,6 +130,26 @@ export default function App() {
       }
     };
 
+  // Normalize name fields: treat empty/placeholder values as missing
+  function normalizeField(value) {
+    if (!value && value !== 0) return null;
+    const str = String(value).trim();
+    if (!str) return null;
+    // Common placeholder used in DB export/view
+    if (str.toUpperCase() === 'EMPTY' || str.toUpperCase() === 'NULL') return null;
+    return str;
+  }
+
+  function getDisplayName(store) {
+    // Prefer building_name_zh for Chinese properties, then estate_name_zh, then name
+    return (
+      normalizeField(store.building_name_zh) ||
+      normalizeField(store.estate_name_zh) ||
+      normalizeField(store.name) ||
+      'UNNAMED PROPERTY'
+    );
+  }
+
   return (
     <div className="bauhaus-container">
       {/* Header Section */}
@@ -249,7 +269,7 @@ export default function App() {
                 </div>
 
                 <div className="property-name">
-                  {store.name || store.estate_name_zh || store.building_name_zh || 'UNNAMED PROPERTY'}
+                  {getDisplayName(store)}
                 </div>
 
                 <div className="property-details">
