@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # Property Finder - Hong Kong & China Real Estate Platform
 
 A comprehensive real estate search platform with advanced web scraping capabilities for Hong Kong and China property markets. Features modern React frontend, robust Node.js API backend, and sophisticated scraping infrastructure.
