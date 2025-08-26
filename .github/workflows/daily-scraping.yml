@@ -40,6 +40,7 @@ jobs:
         # Check if request was successful
         if [ "$http_code" -eq 200 ]; then
           echo "Scraping started successfully"
+          exit 0
         elif [ "$http_code" -eq 429 ]; then
           echo "Scraping was rate limited (too recent)"
           if [ "${{ github.event.inputs.force_run }}" = "true" ]; then
