@@ -97,7 +97,7 @@ router.get('/all', async (req, res, next) => {
 
       SELECT 
         'house' AS deal_type,
-        h.id, h.type, NULL AS building_name_zh, h.estate_name_zh, h.flat,
+        h.id, h.type, h.building_name_zh, h.estate_name_zh, h.flat,
         h.floor, h.unit, h.area, h.deal_price, h.deal_date, h.developer,
         l.province, l.city, l.country, l.town, l.street, l.road,
         ST_Distance(
