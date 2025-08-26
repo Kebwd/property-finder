@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import DataImportExport from './DataImportExport';
-import NewDealForm from './NewDealForm';
 import { geocode }      from './utils/geocode';
 import { API_URL } from './config/api.js';
 import './App.css';
@@ -187,14 +186,9 @@ export default function App() {
       {/* Tools Section */}
       <section className="tools-section">
         <div className="tools-grid">
-          <div className="tool-card red-accent">
+          <div className="tool-card red-accent full-width">
             <h3>DATA IMPORT</h3>
             <DataImportExport />
-          </div>
-          
-          <div className="tool-card blue-accent">
-            <h3>NEW DEAL</h3>
-            <NewDealForm onSuccess={() => fetchStores(query, page)} />
           </div>
         </div>
       </section>
@@ -257,8 +251,23 @@ export default function App() {
                 </div>
                 
                 <div className="location-section">
-                  <div>{store.province} {store.city}</div>
-                  <div>{store.town} {store.street}</div>
+                  {/* Display location based on region */}
+                  {store.province ? (
+                    // China properties
+                    <>
+                      <div>{store.province} {store.city}</div>
+                      <div>{store.country} {store.town}</div>
+                      {(store.street || store.road) && (
+                        <div>{store.street} {store.road}</div>
+                      )}
+                    </>
+                  ) : (
+                    // Hong Kong properties
+                    <>
+                      <div>{store.city}</div>
+                      <div>{store.town} {store.street}</div>
+                    </>
+                  )}
                 </div>
                 
                 {store.developer && (

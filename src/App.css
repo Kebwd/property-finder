@@ -213,6 +213,10 @@ body {
   overflow: hidden;
 }
 
+.tool-card.full-width {
+  grid-column: 1 / -1;
+}
+
 .tool-card.red-accent::before {
   content: '';
   position: absolute;
