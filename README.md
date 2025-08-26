@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 # Property Finder - Hong Kong & China Real Estate Platform
 
 A comprehensive real estate search platform with advanced web scraping capabilities for Hong Kong and China property markets. Features modern React frontend, robust Node.js API backend, and sophisticated scraping infrastructure.
@@ -243,6 +242,37 @@ DATABASE_URL=postgresql://user:pass@host:port/db
 SCRAPERAPI_KEY=your_scraperapi_key
 GEOCODING_API_KEY=your_geocoding_key
 ```
+
+## 🔑 How to Get API Keys
+
+### Supabase
+1. Go to [supabase.com](https://supabase.com) and log in.
+2. Select your project.
+3. Click on `Project Settings` > `API`.
+4. Copy the `Project URL` and `anon` public API key (SUPABASE_ANON_KEY).
+5. Use these in your `.env` and Vercel environment settings.
+
+### Vercel
+1. Go to [vercel.com](https://vercel.com) and log in.
+2. Select your project.
+3. Click on `Settings` > `Environment Variables`.
+4. Add your API keys and secrets here (e.g., VITE_API_BASE_URL, SUPABASE_URL, SUPABASE_ANON_KEY).
+
+### ScraperAPI
+1. Go to [scraperapi.com](https://www.scraperapi.com/) and sign up for an account.
+2. After logging in, go to the dashboard.
+3. Copy your personal API key from the dashboard.
+4. Add this key to your `.env` file as `SCRAPERAPI_KEY`.
+
+### Geocoding API (e.g., Google Maps)
+1. Go to [Google Cloud Console](https://console.cloud.google.com/).
+2. Create or select a project.
+3. Enable the `Geocoding API` from the API Library.
+4. Go to `APIs & Services` > `Credentials`.
+5. Click `Create Credentials` > `API key`.
+6. Copy the API key and add it to your `.env` file as `GEOCODING_API_KEY`.
+
+> **Note:** Never commit your API keys to public repositories. Use environment variables and Vercel/Supabase secret management for production deployments.
 
 ## 📊 API Endpoints
 
