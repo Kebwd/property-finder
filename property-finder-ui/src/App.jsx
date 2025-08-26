@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import DataImportExport from './DataImportExport';
-import NewDealForm from './NewDealForm';
 import { geocode }      from './utils/geocode';
 import './App.css';
 
@@ -201,14 +200,9 @@ export default function App() {
       {/* Tools Section */}
       <section className="tools-section">
         <div className="tools-grid">
-          <div className="tool-card red-accent">
+          <div className="tool-card red-accent full-width">
             <h3>DATA IMPORT</h3>
             <DataImportExport />
-          </div>
-          
-          <div className="tool-card blue-accent">
-            <h3>NEW DEAL</h3>
-            <NewDealForm onSuccess={() => fetchStores(query, page)} />
           </div>
         </div>
       </section>
@@ -244,7 +238,7 @@ export default function App() {
               <article key={`${store.deal_type}-${store.id}`} className={`result-card ${index % 3 === 0 ? 'accent-red' : index % 3 === 1 ? 'accent-blue' : 'accent-yellow'}`}>
                 <div className="card-header">
                   <div className="type-badge">
-                    {types.includes(store.type) ? store.type : '未知'}
+                    {store.type || '未知'}
                   </div>
                   <div className="distance-badge">
                     {store.distance >= 1000 
@@ -255,7 +249,7 @@ export default function App() {
                 </div>
 
                 <div className="property-name">
-                  {store.estate_name_zh || store.building_name_zh || 'UNNAMED PROPERTY'}
+                  {store.name || store.estate_name_zh || store.building_name_zh || 'UNNAMED PROPERTY'}
                 </div>
 
                 <div className="property-details">
@@ -274,8 +268,23 @@ export default function App() {
                 </div>
 
                 <div className="location-section">
-                  <div>{store.province} {store.city}</div>
-                  <div>{store.town} {store.street}</div>
+                  {/* Display location based on region */}
+                  {store.province ? (
+                    // China properties
+                    <>
+                      <div>{store.province} {store.city}</div>
+                      <div>{store.country} {store.town}</div>
+                      {(store.street || store.road) && (
+                        <div>{store.street} {store.road}</div>
+                      )}
+                    </>
+                  ) : (
+                    // Hong Kong properties
+                    <>
+                      <div>{store.city}</div>
+                      <div>{store.town} {store.street}</div>
+                    </>
+                  )}
                 </div>
 
                 {store.developer && (
