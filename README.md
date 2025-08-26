@@ -33,14 +33,14 @@ npm run build
 vercel --prod
 ```
 
-### 3. API Deployment (Railway)
+### 3. API Deployment (Vercel)
 
 ```bash
 cd property-finder-api
 npm install
 
-# Deploy to Railway with environment variables
-railway up
+# Deploy to Vercel (API routes automatically detected)
+vercel --prod
 ```
 
 ### 4. Scraper Setup
@@ -65,7 +65,7 @@ property-finder/
 │   │   └── StoreList.jsx        # Property listings display
 │   ├── package.json
 │   └── Dockerfile
-├── property-finder-api/         # Node.js API backend (Railway deployment)
+├── property-finder-api/         # Node.js API backend (Vercel API routes)
 │   ├── src/
 │   │   ├── server.js           # Express server setup
 │   │   ├── db.js               # Database configuration
@@ -125,10 +125,11 @@ property-finder/
 - **Framework**: React + Vite
 - **Domain**: Auto-assigned vercel.app domain
 
-### Backend API (Railway)
+### Backend API (Vercel)
 - **Directory**: `property-finder-api/`
-- **Start Command**: `npm start`
-- **Port**: Auto-detected from `$PORT`
+- **Deployment**: Vercel API routes (serverless functions)
+- **Build Command**: Automatic API detection
+- **Framework**: Express.js + Serverless
 - **Database**: Supabase PostgreSQL
 - **Health Check**: `/api/health`
 
@@ -224,13 +225,14 @@ For production stability, use **manual CAPTCHA solving** during off-peak hours:
 
 ### Frontend (Vercel)
 ```env
-VITE_API_BASE_URL=https://your-api.railway.app
+VITE_API_BASE_URL=https://your-vercel-app.vercel.app
 ```
 
-### Backend API (Railway)
+### Backend API (Vercel)
 ```env
 DATABASE_URL=postgresql://user:pass@host:port/db
-PORT=3000
+SUPABASE_URL=https://your-project.supabase.co
+SUPABASE_ANON_KEY=your_supabase_anon_key
 NODE_ENV=production
 ```
 
@@ -337,14 +339,14 @@ GET /api/health
 ### API Changes
 1. Develop in `property-finder-api/src/`
 2. Test locally with `npm run dev`
-3. Deploy to Railway with `railway up`
+3. Deploy to Vercel with `vercel --prod`
 
 ## 📞 Support & Handover Notes
 
 ### Critical Information
 - **Lianjia Integration**: Fully implemented but requires CAPTCHA handling
-- **Database**: All schemas and pipelines are production-ready
-- **Deployment**: Both frontend and API are cloud-deployed and stable
+- **Database**: All schemas and pipelines are production-ready on Supabase
+- **Deployment**: Both frontend and API are deployed on Vercel for seamless integration
 
 ### Known Limitations
 - Lianjia requires manual intervention for CAPTCHA
@@ -358,9 +360,9 @@ GET /api/health
 4. Implement user authentication and saved searches
 
 ### Emergency Contacts
-- Scraper Issues: Check CloudWatch logs and ScraperAPI dashboard
+- Scraper Issues: Check ScraperAPI dashboard and server logs
 - Database Issues: Monitor Supabase dashboard and connection health
-- Deployment Issues: Review Vercel and Railway deployment logs
+- Deployment Issues: Review Vercel deployment logs and function analytics
 
 ---
 

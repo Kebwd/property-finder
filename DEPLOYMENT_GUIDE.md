@@ -5,7 +5,7 @@ This guide provides step-by-step instructions for your co-worker to deploy the c
 ## 🎯 Deployment Overview
 
 1. **Frontend**: Deployed to Vercel (React app)
-2. **API**: Deployed to Railway (Node.js backend)  
+2. **API**: Deployed to Vercel (Serverless API routes)  
 3. **Database**: Supabase (PostgreSQL)
 4. **Scraper**: Self-hosted or cloud VPS
 
@@ -14,7 +14,6 @@ This guide provides step-by-step instructions for your co-worker to deploy the c
 ### Required Accounts
 - [ ] GitHub account with repository access
 - [ ] Vercel account (free tier available)
-- [ ] Railway account (free tier available)
 - [ ] Supabase account (free tier available)
 - [ ] ScraperAPI account (for web scraping)
 
@@ -55,29 +54,31 @@ This guide provides step-by-step instructions for your co-worker to deploy the c
    - Port: 5432
    ```
 
-### Step 2: Backend API Deployment (Railway)
+### Step 2: Backend API Deployment (Vercel)
 
 1. **Connect GitHub Repository**
    ```
-   1. Go to https://railway.app
-   2. Click "Deploy from GitHub repo"
-   3. Select property-finder repository
-   4. Choose property-finder-api folder as root
+   1. Go to https://vercel.com
+   2. Click "New Project"
+   3. Import property-finder repository
+   4. Set Root Directory to "property-finder-api"
    ```
 
 2. **Configure Environment Variables**
    ```env
    DATABASE_URL=postgresql://postgres:[password]@db.xxx.supabase.co:5432/postgres
-   PORT=3000
+   SUPABASE_URL=https://your-project.supabase.co
+   SUPABASE_ANON_KEY=your_supabase_anon_key
    NODE_ENV=production
    ```
 
 3. **Deploy**
    ```
-   Railway will automatically:
+   Vercel will automatically:
+   - Detect API routes in the api/ folder
    - Install dependencies (npm install)
-   - Start the server (npm start)
-   - Provide a public URL
+   - Deploy as serverless functions
+   - Provide a public API URL
    ```
 
 ### Step 3: Frontend Deployment (Vercel)
@@ -100,7 +101,7 @@ This guide provides step-by-step instructions for your co-worker to deploy the c
 
 3. **Set Environment Variables**
    ```env
-   VITE_API_BASE_URL=https://your-railway-app.railway.app
+   VITE_API_BASE_URL=https://your-vercel-api.vercel.app
    ```
 
 4. **Deploy**
@@ -177,7 +178,7 @@ Visit your Vercel URL
 
 ### 2. Test API
 ```
-Visit https://your-railway-app.railway.app/api/health
+Visit https://your-vercel-api.vercel.app/api/health
 - Should return: {"status": "ok", "timestamp": "..."}
 
 Test search: /api/search?query=central&type=house
@@ -211,9 +212,9 @@ python3 -m scrapy crawl house -s LOG_LEVEL=INFO
 - Check browser developer console for errors
 
 **API connection errors**
-- Verify DATABASE_URL format
+- Verify DATABASE_URL and SUPABASE_URL format
 - Check Supabase connection limits
-- Ensure Railway service is running
+- Ensure Vercel functions are deployed correctly
 
 **Scraper CAPTCHA issues**
 - Expected for Lianjia - use manual solving
@@ -229,13 +230,12 @@ python3 -m scrapy crawl house -s LOG_LEVEL=INFO
 
 ### Documentation
 - Vercel: https://vercel.com/docs
-- Railway: https://docs.railway.app
 - Supabase: https://supabase.com/docs
 - Scrapy: https://docs.scrapy.org
 
 ### Monitoring
 - **Frontend**: Vercel Dashboard → Analytics
-- **API**: Railway Dashboard → Deployments
+- **API**: Vercel Dashboard → Functions
 - **Database**: Supabase Dashboard → Database
 - **Scraper**: Server logs and cron job output
 
