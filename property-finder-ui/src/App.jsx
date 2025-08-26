@@ -133,7 +133,8 @@ export default function App() {
   // Normalize name fields: treat empty/placeholder values as missing
   function normalizeField(value) {
     if (!value && value !== 0) return null;
-    const str = String(value).trim();
+    // normalize newlines and non-printable white space, then trim
+    const str = String(value).replace(/\s+/g, ' ').trim();
     if (!str) return null;
     // Common placeholder used in DB export/view
     if (str.toUpperCase() === 'EMPTY' || str.toUpperCase() === 'NULL') return null;
@@ -141,10 +142,12 @@ export default function App() {
   }
 
   function getDisplayName(store) {
-    // Prefer building_name_zh for Chinese properties, then estate_name_zh, then name
+    // Prefer building_name_zh, then building_name, then estate_name_zh, then estate_name, then name
     return (
       normalizeField(store.building_name_zh) ||
+      normalizeField(store.building_name) ||
       normalizeField(store.estate_name_zh) ||
+      normalizeField(store.estate_name) ||
       normalizeField(store.name) ||
       'UNNAMED PROPERTY'
     );
