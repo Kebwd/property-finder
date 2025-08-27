@@ -1,6 +1,4 @@
-// store-finder-api/src/rorouter.get('/search', async (req, res, next) => {
-  try {
-    const { q, lat, lng, radius = '3000',type, dateRange } = req.query;s/stores.js
+// store-finder-api/src/routes/business.js
 import express from 'express';
 import pool from '../db.js';
 import { geocode } from '../utils.js';
@@ -12,6 +10,35 @@ const { to: copyTo } = copyStreams;
 const router = express.Router();
 //const upload = multer({ storage: multer.memoryStorage() });
 const upload = multer({ dest: 'uploads' });
+
+// Fallback function to find location in database by name
+async function findLocationInDB(query) {
+  try {
+    // Search for the query in building_name_zh or estate_name_zh fields
+    const sql = `
+      SELECT DISTINCT l.lat, l.lng, l.building_name_zh, l.name
+      FROM location_info l
+      LEFT JOIN business b ON l.id = b.location_id
+      LEFT JOIN house h ON l.id = h.location_id
+      WHERE 
+        LOWER(l.building_name_zh) LIKE LOWER($1)
+        OR LOWER(l.name) LIKE LOWER($1)
+        OR LOWER(b.building_name_zh) LIKE LOWER($1)
+        OR LOWER(h.building_name_zh) LIKE LOWER($1)
+        OR LOWER(h.estate_name_zh) LIKE LOWER($1)
+      LIMIT 1
+    `;
+    
+    const { rows } = await pool.query(sql, [`%${query}%`]);
+    if (rows.length > 0) {
+      return { lat: parseFloat(rows[0].lat), lng: parseFloat(rows[0].lng) };
+    }
+    return null;
+  } catch (err) {
+    console.error('Database location search error:', err);
+    return null;
+  }
+}
 
 function filterEmptyRows() {
   return new Transform({
@@ -40,15 +67,26 @@ router.get('/search', async (req, res, next) => {
 
     // 1) If they gave us a text query, geocode it
     if (q && q.trim()) {
-      const coords = await geocode(q.trim());
-      if (!coords) {
-        return res
-          .status(404)
-          .json({ error: `Could not find location "${q.trim()}"` });
+      try {
+        const coords = await geocode(q.trim());
+        searchLat = coords.lat;
+        searchLng = coords.lng;
+        console.log('geocoded result:', coords);
+      } catch (geocodeErr) {
+        console.warn('Geocoding failed, trying database fallback:', geocodeErr.message);
+        
+        // Try to find location in database by name
+        const dbCoords = await findLocationInDB(q.trim());
+        if (dbCoords) {
+          searchLat = dbCoords.lat;
+          searchLng = dbCoords.lng;
+          console.log(`Found location in database: ${searchLat}, ${searchLng}`);
+        } else {
+          return res
+            .status(404)
+            .json({ error: `Could not find location "${q.trim()}" in geocoding services or database` });
+        }
       }
-      searchLat = coords.lat;
-      searchLng = coords.lng;
-      console.log('geocoded result:', coords);
 
     // 2) Otherwise, if they passed coordinates directly, use them
     } else if (lat && lng) {
