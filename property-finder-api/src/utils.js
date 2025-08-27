@@ -5,12 +5,12 @@ const NOMINATIM_BASE = 'https://nominatim.openstreetmap.org/search';
 // Normalize estate-style input for geocoding
 function normalizeEstateName(query) {
   return query
-    .replace(/\d+號/g, '')     // remove building numbers
-    .replace(/第?\d+座/g, '')   // remove block numbers
-    .replace(/\d+樓[A-Za-z]*/g, '')     // remove floor numbers and unit letters
-    .replace(/\d+室/g, '')     // remove room numbers
-    .replace(/中層|高層|低層/g, '') // remove floor level descriptions
-    .replace(/\s+/g, ' ')      // normalize whitespace
+    .replace(/\s*中層\s*/g, ' ')     // remove middle floor
+    .replace(/\s*高層\s*/g, ' ')     // remove high floor
+    .replace(/\s*低層\s*/g, ' ')     // remove low floor
+    .replace(/\s*\d+樓[A-Za-z]*\s*/g, ' ')  // remove floor numbers and unit letters
+    .replace(/\s*\d+室\s*/g, ' ')    // remove room numbers
+    .replace(/\s+/g, ' ')            // normalize whitespace
     .trim();
 }
 
@@ -45,25 +45,48 @@ export async function geocode(query) {
   if (!query.trim()) {
     throw new Error('Please enter a location');
   }
-  
-  // Normalize the query for geocoding
-  const normalized = normalizeEstateName(query);
-  const biased = `${normalized}, Hong Kong`;
-  const originalBiased = `${query}, Hong Kong`;
 
-  // try OSM first with normalized query, then original
-  let osm = await tryNominatim(biased);
-  if (!osm) {
-    osm = await tryNominatim(originalBiased);
+  console.log(`Attempting to geocode: "${query}"`);
+
+  // Try different variations of the query
+  const queryVariations = [
+    query,
+    normalizeEstateName(query),
+    `${normalizeEstateName(query)}, Hong Kong`,
+    `${query}, Hong Kong`,
+    // For Chinese addresses, try English translation
+    query.replace('荃灣', 'Tsuen Wan').replace('國際企業中心', 'International Enterprise Centre'),
+    `${query.replace('荃灣', 'Tsuen Wan').replace('國際企業中心', 'International Enterprise Centre')}, Hong Kong`
+  ];
+
+  // Try Nominatim with different variations
+  for (const variation of queryVariations) {
+    try {
+      console.log(`Trying Nominatim with: "${variation}"`);
+      const result = await tryNominatim(variation);
+      if (result) {
+        console.log(`Nominatim success: ${result.lat}, ${result.lng}`);
+        return result;
+      }
+    } catch (err) {
+      console.log(`Nominatim failed for "${variation}": ${err.message}`);
+    }
   }
-  if (osm) return osm;
 
-  // try Google with normalized query, then original
-  let g = await tryGoogle(biased);
-  if (!g) {
-    g = await tryGoogle(originalBiased);
+  // Try Google Maps with different variations
+  for (const variation of queryVariations) {
+    try {
+      console.log(`Trying Google Maps with: "${variation}"`);
+      const result = await tryGoogle(variation);
+      if (result) {
+        console.log(`Google Maps success: ${result.lat}, ${result.lng}`);
+        return result;
+      }
+    } catch (err) {
+      console.log(`Google Maps failed for "${variation}": ${err.message}`);
+    }
   }
-  if (g) return g;
 
+  console.log(`All geocoding attempts failed for: "${query}"`);
   throw new Error('Geocoding failed for: ' + query);
 }
