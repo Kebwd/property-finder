@@ -455,7 +455,9 @@ module.exports = async function handler(req, res) {
 
     console.log('Parsed params:', { q, type, page, limit, lat, lng, radius });
 
-    let searchLat, searchLng;
+  let searchLat, searchLng;
+  // Extra debug info collected during processing
+  const debugExtras = {};
 
     // If query provided, geocode it first
     if (q && q.trim()) {
@@ -761,6 +763,70 @@ module.exports = async function handler(req, res) {
 
           let textRes = await pool.query(exactSql, [qText, parseInt(limit)]);
           console.log(`Exact-name text-search returned ${textRes.rows.length} rows`);
+          debugExtras.exact_name_count = textRes.rows.length;
+
+          // Attempt a normalized-exact match (strip spaces) if exact returned none
+          if (!textRes.rows.length) {
+            const normExactSql = `
+              SELECT * FROM (
+                SELECT
+                  'business' AS source,
+                  b.id,
+                  b.type,
+                  b.building_name_zh as name,
+                  NULL as estate_name_zh,
+                  b.building_name_zh,
+                  b.floor,
+                  b.unit,
+                  b.area,
+                  b.deal_price,
+                  b.deal_date,
+                  l.province,
+                  l.city,
+                  l.town,
+                  l.street,
+                  l.lat,
+                  l.long,
+                  0 as distance
+                FROM business b
+                JOIN location_info l ON b.location_id = l.id
+                WHERE LOWER(REPLACE(b.building_name_zh, ' ', '')) = LOWER(REPLACE($1, ' ', ''))
+                   OR LOWER(REPLACE(b.building_name, ' ', '')) = LOWER(REPLACE($1, ' ', ''))
+
+                UNION ALL
+
+                SELECT
+                  'house' AS source,
+                  h.id,
+                  h.type,
+                  COALESCE(NULLIF(h.estate_name_zh, ''), NULLIF(h.building_name_zh, ''), h.building_name_zh) as name,
+                  h.estate_name_zh,
+                  h.building_name_zh,
+                  h.floor,
+                  h.unit,
+                  h.area,
+                  h.deal_price,
+                  h.deal_date,
+                  l.province,
+                  l.city,
+                  l.town,
+                  l.street,
+                  l.lat,
+                  l.long,
+                  0 as distance
+                FROM house h
+                JOIN location_info l ON h.location_id = l.id
+                WHERE LOWER(REPLACE(h.estate_name_zh, ' ', '')) = LOWER(REPLACE($1, ' ', ''))
+                   OR LOWER(REPLACE(h.building_name_zh, ' ', '')) = LOWER(REPLACE($1, ' ', ''))
+                   OR LOWER(REPLACE(h.building_name, ' ', '')) = LOWER(REPLACE($1, ' ', ''))
+              ) AS t
+              LIMIT $2
+            `;
+            const normRes = await pool.query(normExactSql, [qText, parseInt(limit)]);
+            console.log(`Normalized-exact text-search returned ${normRes.rows.length} rows`);
+            debugExtras.normalized_exact_count = normRes.rows.length;
+            if (normRes.rows.length) textRes = normRes;
+          }
 
           // 2) If no exact matches, run the looser wildcard ILIKE search
           if (!textRes.rows.length) {
@@ -820,6 +886,7 @@ module.exports = async function handler(req, res) {
 
             textRes = await pool.query(textSql, [`%${qText}%`, parseInt(limit)]);
             console.log(`Wildcard text-search returned ${textRes.rows.length} rows`);
+            debugExtras.wildcard_count = textRes.rows.length;
           }
 
           // Merge unique rows (by source + id)
@@ -833,14 +900,17 @@ module.exports = async function handler(req, res) {
           }
           // Replace result.rows with merged rows
           result.rows = rows;
+          debugExtras.merged_text_fallback = (textRes.rows || []).length;
           // If still not containing an exact-name or if user expects a location-name match,
           // try searching `location_info` table first and fetch associated rows by location_id.
           try {
-            const locationIds = await findLocationInfoIds(qText);
+      const locationIds = await findLocationInfoIds(qText);
+      debugExtras.location_info_ids = locationIds;
             if (locationIds && locationIds.length) {
               console.log('Found location_info IDs for query, fetching associated rows:', locationIds.slice(0,10));
               const locRows = await fetchRowsByLocationIds(locationIds, parseInt(limit));
               if (locRows && locRows.length) {
+                debugExtras.location_rows_count = locRows.length;
                 // Merge but prioritize these rows at the front
                 const existing = new Set(result.rows.map(r => `${r.source}_${r.id}`));
                 const merged = [];
