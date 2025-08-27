@@ -1,0 +1,108 @@
+# Chinese Property API Configuration
+# Add your API keys and configurations here
+
+# RapidAPI Configuration (Multiple Chinese property providers available)
+rapidapi:
+  apiKey: "YOUR_RAPIDAPI_KEY"
+  host: "chinese-property-data.p.rapidapi.com"
+  baseUrl: "https://chinese-property-data.p.rapidapi.com"
+  # Available providers on RapidAPI:
+  # - Real Estate China API
+  # - Chinese Property Search API
+  # - Asia Property Data API
+
+# 房天下开放平台 (Fang.com Open Platform)
+fang:
+  appKey: "YOUR_FANG_APP_KEY"
+  token: "YOUR_FANG_ACCESS_TOKEN"
+  baseUrl: "https://open.fang.com"
+  # Apply at: https://open.fang.com/
+  # Documentation: https://open.fang.com/wiki/
+
+# 安居客企业版 (Anjuke Enterprise API)
+anjuke:
+  apiKey: "YOUR_ANJUKE_API_KEY"
+  baseUrl: "https://api.anjuke.com"
+  # Contact: corp.anjuke.com for enterprise access
+  # Business partnership required
+
+# Government Open Data APIs
+government:
+  cities:
+    beijing:
+      name: "北京市政府数据开放平台"
+      endpoint: "http://data.beijing.gov.cn/api/property/transactions"
+      # Free but limited data
+    
+    shanghai:
+      name: "上海市数据开放平台"
+      endpoint: "http://data.sh.gov.cn/api/real-estate"
+      # Registration required
+    
+    shenzhen:
+      name: "深圳市开放数据平台"
+      endpoint: "http://opendata.sz.gov.cn/api/housing"
+      # Limited historical data
+
+# Backup/Alternative APIs
+alternatives:
+  # 58同城开放平台 (if available)
+  site_58:
+    businessKey: "YOUR_58_BUSINESS_KEY"
+    baseUrl: "https://open.58.com"
+  
+  # 贝壳找房API (Premium)
+  beike:
+    enterpriseKey: "YOUR_BEIKE_ENTERPRISE_KEY"
+    baseUrl: "https://open.ke.com"
+
+# API Rate Limiting and Caching
+settings:
+  defaultProvider: "rapidapi"  # fallback order: rapidapi -> fang -> government
+  cacheTimeout: 3600000       # 1 hour in milliseconds
+  rateLimits:
+    rapidapi: 1000            # requests per hour
+    fang: 5000                # requests per hour
+    anjuke: 2000              # requests per hour
+    government: 500           # requests per hour
+  
+  retryPolicy:
+    maxRetries: 3
+    retryDelay: 2000          # milliseconds
+    exponentialBackoff: true
+
+# City Coverage by Provider
+coverage:
+  rapidapi:
+    tier1: ["beijing", "shanghai", "shenzhen", "guangzhou"]
+    tier2: ["foshan", "dongguan", "zhuhai", "zhongshan"]
+    tier3: ["jiangmen", "huizhou", "chongqing", "wuhan"]
+  
+  fang:
+    tier1: ["beijing", "shanghai", "shenzhen", "guangzhou"]
+    tier2: ["foshan", "dongguan", "zhuhai", "zhongshan", "jiangmen", "huizhou"]
+    tier3: ["chongqing", "wuhan", "xiamen", "fuzhou", "quanzhou"]
+  
+  government:
+    available: ["beijing", "shanghai", "shenzhen"]
+    limited: ["guangzhou", "chongqing"]
+
+# Cost Estimation (Monthly)
+costs:
+  rapidapi:
+    basic: "$50-200"     # Basic plans
+    pro: "$200-500"      # Professional plans
+    enterprise: "$500+"  # High volume
+  
+  fang:
+    startup: "¥2000-4000"    # ~$280-560
+    business: "¥4000-8000"   # ~$560-1120
+    enterprise: "¥8000+"     # ~$1120+
+  
+  anjuke:
+    contact: "Contact for pricing"
+    estimated: "¥3000-10000" # ~$420-1400
+  
+  government:
+    cost: "Free"
+    limitations: "Rate limited, historical data only"

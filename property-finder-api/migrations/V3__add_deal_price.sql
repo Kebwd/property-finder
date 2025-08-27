@@ -1,0 +1,2 @@
+ALTER TABLE stores
+  ADD COLUMN deal_price NUMERIC(10,2);
