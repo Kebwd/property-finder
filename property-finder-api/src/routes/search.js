@@ -99,10 +99,11 @@ async function findLocationInDealTracking(query) {
 
     // Try multiple possible paths for Vercel deployment
     const possiblePaths = [
-      path.join(process.cwd(), '../../scraper/deal_tracking.json'),
+      path.join(process.cwd(), 'deal_tracking.json'),  // Local copy in API directory
       path.join(process.cwd(), '../../../scraper/deal_tracking.json'),
+      path.join(process.cwd(), '../../../../scraper/deal_tracking.json'),
+      path.join(process.cwd(), '../../scraper/deal_tracking.json'),
       path.join(process.cwd(), '../scraper/deal_tracking.json'),
-      path.join(process.cwd(), 'scraper/deal_tracking.json'),
       '/tmp/deal_tracking.json'
     ];
 
@@ -116,7 +117,14 @@ async function findLocationInDealTracking(query) {
     }
 
     if (!dealTrackingPath) {
-      console.log('Deal tracking file not found in any expected location');
+      console.log('Deal tracking file not found, using embedded data');
+      // Use embedded data as fallback
+      for (const deal of EMBEDDED_DEALS) {
+        if (deal.building === query || query.includes(deal.building) || deal.building.includes(query) || deal.address.includes(query)) {
+          console.log(`Found embedded deal: ${deal.building}`);
+          return { lat: deal.lat, lng: deal.lng, source: 'embedded_deal_tracking', deal: deal.building };
+        }
+      }
       return null;
     }
 
@@ -180,6 +188,14 @@ async function findLocationInDealTracking(query) {
 
   } catch (err) {
     console.error('Deal tracking search error:', err);
+    // Return embedded data as last resort
+    console.log('Falling back to embedded deal data');
+    for (const deal of EMBEDDED_DEALS) {
+      if (deal.building === query || query.includes(deal.building) || deal.building.includes(query) || deal.address.includes(query)) {
+        console.log(`Found embedded deal: ${deal.building}`);
+        return { lat: deal.lat, lng: deal.lng, source: 'embedded_deal_tracking', deal: deal.building };
+      }
+    }
     return null;
   }
 }
@@ -191,19 +207,26 @@ async function getAvailableDeals() {
     const path = await import('path');
 
     const possiblePaths = [
-      path.join(process.cwd(), '../../scraper/deal_tracking.json'),
+      path.join(process.cwd(), 'deal_tracking.json'),  // Local copy in API directory
       path.join(process.cwd(), '../../../scraper/deal_tracking.json'),
+      path.join(process.cwd(), '../../../../scraper/deal_tracking.json'),
+      path.join(process.cwd(), '../../scraper/deal_tracking.json'),
       path.join(process.cwd(), '../scraper/deal_tracking.json'),
-      path.join(process.cwd(), 'scraper/deal_tracking.json'),
       '/tmp/deal_tracking.json'
     ];
 
     for (const testPath of possiblePaths) {
-      if (fs.existsSync(testPath)) {
-        const data = JSON.parse(fs.readFileSync(testPath, 'utf8'));
-        return (data.current_deals || []).map(deal => deal.split('_')[0]);
+      try {
+        if (fs.existsSync(testPath)) {
+          const data = JSON.parse(fs.readFileSync(testPath, 'utf8'));
+          return (data.current_deals || []).map(deal => deal.split('_')[0]);
+        }
+      } catch (err) {
+        // Continue to next path
       }
     }
+
+    // No fallback data available
     return [];
   } catch (err) {
     console.error('Error getting available deals:', err);
