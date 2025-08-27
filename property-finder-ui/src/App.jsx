@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import DataImportExport from './DataImportExport';
-import { geocode }      from './utils/geocode';
+// client-side geocoding removed for server-side geocode usage
 import './App.css';
 
 export default function App() {
@@ -62,30 +62,20 @@ export default function App() {
     setError('');
     setLoading(true);
     console.log('filterType is:', JSON.stringify(filterType));// For debugging
-    // 1) Geocode the text query
-    let coords;
-    try {
-      if (!query.trim()) {
-        throw new Error('Please enter a location');
-      }
-      coords = await geocode(query.trim());
-      if (!coords) {
-        throw new Error(`Could not find location “${query.trim()}”`);
-      }
-    } catch (err) {
-      setError(err.message);
+    // 1) Build the API URL with text query (server will geocode using server-side key)
+    if (!query.trim()) {
+      setError('Please enter a location');
       setStores([]);
       setLoading(false);
       return;
     }
 
-    // 2) Build the API URL with params
+    // 2) Build the API URL with params — send text `q` so the server geocodes it
     const params = new URLSearchParams({
-      lat:      coords.lat,
-      lng:      coords.lng,
-      radius:   '5000',
-      page:     '1',
-      limit:    '10'
+      q: query.trim(),
+      radius: '5000',
+      page: '1',
+      limit: '10'
     });
     if (filterType && filterType !== '全部') {
       // Use the mapped type name for database query

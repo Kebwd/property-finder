@@ -14,12 +14,13 @@
             <h2 class="text-lg font-semibold mb-4">Search Properties</h2>
             
             <div class="mb-4">
-                <label class="block text-sm font-medium mb-2">Location:</label>
-                <select id="location" class="w-full p-2 border rounded">
-                    <option value="22.281,114.161">Central Hong Kong</option>
-                    <option value="22.3193,114.1694">Tsim Sha Tsui</option>
-                    <option value="22.2783,114.1747">Causeway Bay</option>
-                </select>
+                <label class="block text-sm font-medium mb-2">Query (building name or address):</label>
+                <input id="q" class="w-full p-2 border rounded" placeholder="e.g. 波頓科創中心 or 荃灣 國際企業中心1期 中層 8室" />
+            </div>
+
+            <div class="mb-4">
+                <label class="block text-sm font-medium mb-2">API Base (optional):</label>
+                <input id="apiBase" class="w-full p-2 border rounded" value="https://property-finder-vert-beta.vercel.app" />
             </div>
             
             <button onclick="searchProperties()" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">
@@ -32,14 +33,14 @@
 
     <script>
         async function searchProperties() {
-            const location = document.getElementById('location').value;
-            const [lat, lng] = location.split(',');
+            const q = document.getElementById('q').value.trim();
+            const apiBase = document.getElementById('apiBase').value.trim() || 'https://property-finder-vert-beta.vercel.app';
             
             const resultsDiv = document.getElementById('results');
             resultsDiv.innerHTML = '<p class="text-gray-600">Searching...</p>';
             
             try {
-                const url = `https://property-finder-vert-beta.vercel.app/api/search/all?lat=${lat}&lng=${lng}&radius=5000&page=1&perPage=10`;
+                const url = `${apiBase}/api/search?q=${encodeURIComponent(q)}&limit=10`;
                 console.log('Fetching:', url);
                 
                 const response = await fetch(url);
@@ -60,7 +61,7 @@
                                 <p class="text-sm text-gray-600">Price: HK$ ${Number(property.deal_price).toLocaleString()}</p>
                                 <p class="text-sm text-gray-600">Area: ${property.area} sq ft</p>
                                 <p class="text-sm text-gray-600">Location: ${property.city}, ${property.town}</p>
-                                <p class="text-sm text-gray-600">Distance: ${Math.round(property.distance * 1000)}m</p>
+                                <p class="text-sm text-gray-600">Distance: ${Math.round(property.distance)}m</p>
                             </div>
                         `;
                     });

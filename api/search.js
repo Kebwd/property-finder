@@ -1210,23 +1210,36 @@ module.exports = async function handler(req, res) {
       });
     }
 
+    // Group by location_id to collapse units into one building row
+    const grouped = new Map();
+    for (const r of result.rows) {
+      const lid = r.location_id;
+      if (!grouped.has(lid)) {
+        grouped.set(lid, { ...r, units_count: 0, sample_units: [] });
+      }
+      const g = grouped.get(lid);
+      g.units_count += 1;
+      if (g.sample_units.length < 3) g.sample_units.push({ id: r.id, floor: r.floor, unit: r.unit, type: r.source });
+    }
+    const groupedRows = Array.from(grouped.values());
+
     res.status(200).json({
       success: true,
-      data: result.rows,
+      data: groupedRows,
       debug: {
         query: q,
         coordinates: { lat: searchLat, lng: searchLng },
         source: 'database_query',
-        row_count: result.rows.length,
-        deal_tracking_check: dealCheck
-      ,
+        row_count: groupedRows.length,
+        deal_tracking_check: dealCheck,
         debugExtras: debugExtras || {},
-        nearest_distance_m: result.nearest_distance_m || null
+        nearest_distance_m: result.nearest_distance_m || null,
+        grouped_by_location_id: true
       },
       pagination: {
         page: parseInt(page),
         limit: parseInt(limit),
-        total: result.rows.length
+        total: groupedRows.length
       },
       timestamp: new Date().toISOString()
     });
