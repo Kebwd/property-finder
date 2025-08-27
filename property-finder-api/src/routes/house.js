@@ -10,125 +10,6 @@ const { to: copyTo } = copyStreams;
 const router = express.Router();
 //const upload = multer({ storage: multer.memoryStorage() });
 const upload = multer({ dest: 'uploads' });
-
-// Fallback function to find location in database by name
-async function findLocationInDB(query) {
-  try {
-    // Normalize the query for database search
-    const normalized = query
-      .replace(/\d+號/g, '')     // remove building numbers
-      .replace(/第?\d+座/g, '')   // remove block numbers
-      .replace(/\d+樓[A-Za-z]*/g, '')     // remove floor numbers and unit letters
-      .replace(/\d+室/g, '')     // remove room numbers
-      .replace(/中層|高層|低層/g, '') // remove floor level descriptions
-      .replace(/\s+/g, ' ')      // normalize whitespace
-      .trim();
-    
-    // Try multiple search strategies
-    const searchTerms = [query, normalized];
-    
-    // Extract key location terms (remove district prefixes for broader search)
-    if (query.includes('荃灣')) {
-      searchTerms.push(query.replace('荃灣', '').trim());
-      searchTerms.push('荃灣'); // also search for just the district
-    }
-    
-    for (const term of searchTerms) {
-      if (!term.trim()) continue;
-      
-      const sql = `
-        SELECT DISTINCT l.lat, l.lng, l.building_name_zh, l.name,
-               b.building_name_zh as business_building, h.building_name_zh as house_building, h.estate_name_zh
-        FROM location_info l
-        LEFT JOIN business b ON l.id = b.location_id
-        LEFT JOIN house h ON l.id = h.location_id
-        WHERE 
-          LOWER(l.building_name_zh) LIKE LOWER($1)
-          OR LOWER(l.name) LIKE LOWER($1)
-          OR LOWER(b.building_name_zh) LIKE LOWER($1)
-          OR LOWER(h.building_name_zh) LIKE LOWER($1)
-          OR LOWER(h.estate_name_zh) LIKE LOWER($1)
-          OR LOWER($1) LIKE LOWER(l.building_name_zh)
-          OR LOWER($1) LIKE LOWER(l.name)
-        LIMIT 1
-      `;
-      
-      const { rows } = await pool.query(sql, [`%${term}%`]);
-      if (rows.length > 0) {
-        console.log(`Found location in database for term "${term}": ${rows[0].building_name_zh || rows[0].name}`);
-        return { lat: parseFloat(rows[0].lat), lng: parseFloat(rows[0].lng) };
-      }
-    }
-    
-    // If database search fails, try deal tracking file as fallback
-    console.log('Database search failed, trying deal tracking fallback...');
-    return await findLocationInDealTracking(query);
-    
-  } catch (err) {
-    console.error('Database location search error:', err);
-    // Try deal tracking as last resort
-    return await findLocationInDealTracking(query);
-  }
-}
-
-// Fallback function to search deal tracking JSON file
-async function findLocationInDealTracking(query) {
-  try {
-    const fs = await import('fs');
-    const path = await import('path');
-    
-    // Path to deal tracking file
-    const dealTrackingPath = path.join(process.cwd(), '../../scraper/deal_tracking.json');
-    
-    if (!fs.existsSync(dealTrackingPath)) {
-      console.log('Deal tracking file not found');
-      return null;
-    }
-    
-    const data = JSON.parse(fs.readFileSync(dealTrackingPath, 'utf8'));
-    const deals = data.current_deals || [];
-    
-    // Search for query in deal strings
-    for (const dealString of deals) {
-      if (dealString.includes(query) || query.includes(dealString.split('_')[0])) {
-        console.log(`Found location in deal tracking: ${dealString}`);
-        
-        // Extract location info from deal string
-        const parts = dealString.split('_');
-        if (parts.length >= 2) {
-          const building = parts[0];
-          const location = parts[1];
-          
-          // Use dummy coordinates for Hong Kong (can be improved with actual geocoding later)
-          // These are approximate coordinates for Tsuen Wan area
-          let lat = 22.3686, lng = 114.1048; // Default Tsuen Wan coordinates
-          
-          if (location.includes('荃灣')) {
-            lat = 22.3686; lng = 114.1048; // Tsuen Wan
-          } else if (location.includes('中環')) {
-            lat = 22.2819; lng = 114.1588; // Central
-          } else if (location.includes('尖沙咀')) {
-            lat = 22.2969; lng = 114.1722; // Tsim Sha Tsui
-          } else if (location.includes('上環')) {
-            lat = 22.2867; lng = 114.1491; // Sheung Wan
-          } else if (location.includes('元朗')) {
-            lat = 22.4414; lng = 114.0222; // Yuen Long
-          }
-          
-          console.log(`Using coordinates for ${location}: ${lat}, ${lng}`);
-          return { lat, lng };
-        }
-      }
-    }
-    
-    console.log(`No matching deals found for query: ${query}`);
-    return null;
-    
-  } catch (err) {
-    console.error('Deal tracking search error:', err);
-    return null;
-  }
-}
 const typeMap = {
   '全部': [],
   '住宅單位': ['别墅', '公寓', '住宅单位','住宅單位'],
@@ -153,7 +34,7 @@ function filterEmptyRows() {
 
 router.get('/search', async (req, res, next) => {
   try {
-    const { q, lat, lng, radius = '3000',type, dateRange } = req.query;
+    const { q, lat, lng, radius = '5000',type, dateRange } = req.query;
     let searchLat, searchLng;
     let dateThreshold;
     if (dateRange && !isNaN(parseInt(dateRange, 10))) {
@@ -164,25 +45,14 @@ router.get('/search', async (req, res, next) => {
     }
     // 1) If they gave us a text query, geocode it
     if (q && q.trim()) {
-      try {
-        const coords = await geocode(q.trim());
-        searchLat = coords.lat;
-        searchLng = coords.lng;
-      } catch (geocodeErr) {
-        console.warn('Geocoding failed, trying database fallback:', geocodeErr.message);
-        
-        // Try to find location in database by name
-        const dbCoords = await findLocationInDB(q.trim());
-        if (dbCoords) {
-          searchLat = dbCoords.lat;
-          searchLng = dbCoords.lng;
-          console.log(`Found location in database: ${searchLat}, ${searchLng}`);
-        } else {
-          return res
-            .status(404)
-            .json({ error: `Could not find location "${q.trim()}" in geocoding services or database` });
-        }
+      const coords = await geocode(q.trim());
+      if (!coords) {
+        return res
+          .status(404)
+          .json({ error: `Could not find location "${q.trim()}"` });
       }
+      searchLat = coords.lat;
+      searchLng = coords.lng;
 
     // 2) Otherwise, if they passed coordinates directly, use them
     } else if (lat && lng) {

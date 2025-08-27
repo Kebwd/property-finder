@@ -31,8 +31,8 @@ if (!GEOCODING_API_KEY) {
 
 
 const pool = new Pool({ connectionString: process.env.DATABASE_URL });
-// const redis = createClient({ url: process.env.REDIS_URL });
-// await redis.connect();
+const redis = createClient({ url: process.env.REDIS_URL });
+await redis.connect();
 
 const app = express();
 app.use(cors());
@@ -62,8 +62,8 @@ app.listen(port, () => console.log(`API listening on ${port}`));
 
 async function geocode(address) {
   const key = `geo:${address}`;
-  // const cached = await redis.get(key);
-  // if (cached) return JSON.parse(cached);
+  const cached = await redis.get(key);
+  if (cached) return JSON.parse(cached);
 
   const res = await fetch(
     `https://maps.googleapis.com/maps/api/geocode/json?` +
@@ -73,7 +73,7 @@ async function geocode(address) {
   const data = await res.json();
   const loc = data.results?.[0]?.geometry.location;
   if (!loc) throw new Error('Geocode failed');
-  // await redis.set(key, JSON.stringify(loc), { EX: 86400 });
+  await redis.set(key, JSON.stringify(loc), { EX: 86400 });
   return loc;
 }
 

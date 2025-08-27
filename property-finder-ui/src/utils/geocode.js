@@ -15,7 +15,7 @@ function normalizeEstateName(query) {
   return query
     .replace(/\d+號/g, '')     // remove building numbers like 19號
     .replace(/第?\d+座/g, '')   // remove block numbers
-    .replace(/\d+樓[A-Za-z]*/g, '')     // remove floor numbers and unit letters
+    .replace(/\d+樓/g, '')     // remove floor numbers
     .replace(/\d+/g, '')       // remove any remaining numbers
     .trim();
 }

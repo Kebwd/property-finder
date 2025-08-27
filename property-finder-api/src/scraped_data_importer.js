@@ -18,37 +18,51 @@ class ScrapedDataImporter {
         console.log('========================');
     }
     
-    async importDealTrackingData(filePath) {
+    async importScrapedProperties(filePath) {
         try {
-            console.log(`📁 Loading deal tracking data from: ${filePath}`);
+            console.log(`📁 Loading scraped data from: ${filePath}`);
             
             const data = JSON.parse(fs.readFileSync(filePath, 'utf8'));
-            const deals = data.current_deals || [];
+            let properties = [];
             
-            console.log(`📊 Processing ${deals.length} deals`);
+            // Handle different file formats from scrapers
+            if (data.properties) {
+                properties = data.properties;
+            } else if (data.results) {
+                // Expanded scraper format
+                for (const cityData of Object.values(data.results)) {
+                    if (cityData && cityData.properties) {
+                        properties.push(...cityData.properties);
+                    }
+                }
+            } else if (Array.isArray(data)) {
+                properties = data;
+            }
+            
+            console.log(`📊 Processing ${properties.length} scraped properties`);
             
             let inserted = 0;
-            let skipped = 0;
+            let updated = 0;
             let errors = 0;
             
-            for (const dealString of deals) {
+            for (const property of properties) {
                 try {
-                    const result = await this.insertDeal(dealString);
+                    const result = await this.insertProperty(property);
                     if (result === 'inserted') inserted++;
-                    else if (result === 'skipped') skipped++;
+                    else if (result === 'updated') updated++;
                 } catch (error) {
-                    console.error(`❌ Error processing deal: ${error.message}`);
+                    console.error(`❌ Error processing property: ${error.message}`);
                     errors++;
                 }
             }
             
             console.log('\n📈 IMPORT RESULTS:');
-            console.log(`   New deals: ${inserted}`);
-            console.log(`   Skipped (already exist): ${skipped}`);
+            console.log(`   New properties: ${inserted}`);
+            console.log(`   Updated properties: ${updated}`);
             console.log(`   Errors: ${errors}`);
-            console.log(`   Total processed: ${deals.length}`);
+            console.log(`   Total processed: ${properties.length}`);
             
-            return { inserted, skipped, errors, total: deals.length };
+            return { inserted, updated, errors, total: properties.length };
             
         } catch (error) {
             console.error(`❌ Import failed: ${error.message}`);
@@ -56,140 +70,84 @@ class ScrapedDataImporter {
         }
     }
     
-    async insertDeal(dealString) {
-        // Parse deal string format: "building_location_room_price_date"
-        const parts = dealString.split('_');
-        if (parts.length < 5) {
-            throw new Error(`Invalid deal format: ${dealString}`);
-        }
+    async insertProperty(propertyData) {
+        // Generate unique hash for deduplication
+        const hash = this.generatePropertyHash(propertyData);
         
-        const building = parts[0];
-        const location = parts[1];
-        const room = parts[2];
-        const price = parts[3];
-        const date = parts[4];
-        
-        // Parse price (remove $ and convert 萬 to number)
-        const priceNum = this.parsePrice(price);
-        
-        // Parse date (DD/MM/YYYY to YYYY-MM-DD)
-        const [day, month, year] = date.split('/');
-        const isoDate = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
-        
-        // Extract location components
-        const locationParts = location.split(' ');
-        const district = locationParts[0]; // e.g., "荃灣"
-        const address = locationParts.slice(1).join(' '); // rest of address
-        
-        // Determine property type (business if commercial building names)
-        const isBusiness = this.isBusinessProperty(building, address);
-        const propertyType = isBusiness ? 'business' : 'house';
+        // Normalize the data to match existing schema
+        const normalized = this.normalizePropertyData(propertyData);
         
         const client = await this.pool.connect();
         
         try {
-            // Check if deal already exists
-            const existingQuery = `
-                SELECT id FROM ${propertyType} 
-                WHERE building_name_zh = $1 
-                AND deal_date = $2 
-                AND deal_price = $3
-            `;
-            const existing = await client.query(existingQuery, [building, isoDate, priceNum]);
+            // Check if property already exists
+            const existingQuery = 'SELECT id FROM scraped_properties WHERE property_hash = $1';
+            const existing = await client.query(existingQuery, [hash]);
             
             if (existing.rows.length > 0) {
-                return 'skipped';
-            }
-            
-            // Get or create location
-            let locationId;
-            const locationQuery = `
-                SELECT id FROM location_info 
-                WHERE building_name_zh = $1 
-                OR name = $1
-                LIMIT 1
-            `;
-            const existingLocation = await client.query(locationQuery, [building]);
-            
-            if (existingLocation.rows.length > 0) {
-                locationId = existingLocation.rows[0].id;
+                // Update existing property
+                const updateQuery = `
+                    UPDATE scraped_properties SET
+                        title = $2, price = $3, location = $4, property_type = $5,
+                        source_url = $6, source_site = $7, city = $8,
+                        updated_at = CURRENT_TIMESTAMP
+                    WHERE property_hash = $1
+                `;
+                
+                await client.query(updateQuery, [
+                    hash,
+                    normalized.title,
+                    normalized.price,
+                    normalized.location,
+                    normalized.property_type,
+                    normalized.source_url,
+                    normalized.source_site,
+                    normalized.city
+                ]);
+                
+                return 'updated';
             } else {
-                // Create new location (we'll need coordinates - for now use dummy coordinates)
-                const insertLocationQuery = `
-                    INSERT INTO location_info (
-                        building_name_zh, name, province, city, country, town, street, road,
-                        lat, lng, geom
-                    ) VALUES ($1, $1, '香港', $2, '中國', $2, $3, $3, 
-                             22.3193, 114.1694, 
-                             ST_SetSRID(ST_Point(114.1694, 22.3193), 4326))
-                    RETURNING id
+                // Insert new property
+                const insertQuery = `
+                    INSERT INTO scraped_properties (
+                        property_hash, title, price, location, property_type,
+                        source_url, source_site, city, scraped_at
+                    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, CURRENT_TIMESTAMP)
                 `;
-                const locationResult = await client.query(insertLocationQuery, [building, district, address]);
-                locationId = locationResult.rows[0].id;
-                console.log(`📍 Created new location: ${building} in ${district}`);
+                
+                await client.query(insertQuery, [
+                    hash,
+                    normalized.title,
+                    normalized.price,
+                    normalized.location,
+                    normalized.property_type,
+                    normalized.source_url,
+                    normalized.source_site,
+                    normalized.city
+                ]);
+                
+                return 'inserted';
             }
-            
-            // Insert deal
-            let insertQuery, values;
-            if (propertyType === 'business') {
-                insertQuery = `
-                    INSERT INTO business (
-                        type, building_name_zh, floor, unit, area, deal_price, deal_date, developer, location_id
-                    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-                `;
-                values = [
-                    '商舖', building, this.extractFloor(address), room, null, priceNum, isoDate, null, locationId
-                ];
-            } else {
-                insertQuery = `
-                    INSERT INTO house (
-                        type, estate_name_zh, flat, building_name_zh, floor, unit, area, 
-                        house_type, deal_price, deal_date, developer, location_id
-                    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
-                `;
-                values = [
-                    '住宅', building, room, building, this.extractFloor(address), room, null,
-                    '住宅', priceNum, isoDate, null, locationId
-                ];
-            }
-            
-            await client.query(insertQuery, values);
-            console.log(`✅ Inserted ${propertyType} deal: ${building} - ${price}`);
-            return 'inserted';
-            
         } finally {
             client.release();
         }
     }
     
-    parsePrice(priceStr) {
-        // Remove $ and convert Chinese numbers
-        let numStr = priceStr.replace('$', '').replace('萬', '');
-        const multiplier = priceStr.includes('萬') ? 10000 : 1;
-        return parseFloat(numStr) * multiplier;
+    generatePropertyHash(property) {
+        const hashString = `${property.title || ''}_${property.location || ''}_${property.price || ''}`;
+        return crypto.createHash('md5').update(hashString.toLowerCase()).digest('hex');
     }
     
-    isBusinessProperty(building, address) {
-        // Determine if this is a business/commercial property
-        const businessKeywords = ['商業中心', '企業中心', '大厦', '商業大厦', '寫字樓', '商舖'];
-        return businessKeywords.some(keyword => 
-            building.includes(keyword) || address.includes(keyword)
-        );
-    }
-    
-    extractFloor(address) {
-        // Extract floor number from address
-        const floorMatch = address.match(/([中高低])層/);
-        if (floorMatch) {
-            const floorType = floorMatch[1];
-            switch (floorType) {
-                case '低': return '低層';
-                case '中': return '中層';
-                case '高': return '高層';
-                default: return '中層';
-            }
-        }
-        return '中層'; // default
+    normalizePropertyData(property) {
+        return {
+            title: String(property.title || property.name || '').trim(),
+            price: this.parsePrice(property.price),
+            location: String(property.location || property.address || '').trim(),
+            property_type: Array.isArray(property.type) ? property.type.join(', ') : String(property.type || ''),
+            source_url: String(property.url || '').trim(),
+            source_site: String(property.source || '').trim(),
+            city: String(property.city || '').trim()
+        };
     }
     
     parsePrice(priceStr) {
@@ -245,7 +203,6 @@ async function main() {
     if (process.argv.length < 3) {
         console.log('Usage: node scraped_data_importer.js <json_file_path>');
         console.log('Example: node scraped_data_importer.js morning_scrape_20250822.json');
-        console.log('For deal tracking: node scraped_data_importer.js deal_tracking.json');
         return;
     }
     
@@ -253,15 +210,8 @@ async function main() {
     const importer = new ScrapedDataImporter();
     
     try {
-        // Check if this is deal tracking data
-        if (filePath.includes('deal_tracking.json')) {
-            console.log('📋 Importing deal tracking data...');
-            await importer.importDealTrackingData(filePath);
-        } else {
-            // Regular scraped properties import
-            await importer.createScrapedPropertiesTable();
-            await importer.importScrapedProperties(filePath);
-        }
+        await importer.createScrapedPropertiesTable();
+        await importer.importScrapedProperties(filePath);
         console.log('\n🎉 Import completed successfully!');
     } catch (error) {
         console.error('❌ Import failed:', error.message);

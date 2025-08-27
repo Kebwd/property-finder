@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import DataImportExport from './DataImportExport';
-// server will perform geocoding using a server-side API key
+import { geocode }      from './utils/geocode';
 import './App.css';
 
 export default function App() {
@@ -62,17 +62,27 @@ export default function App() {
     setError('');
     setLoading(true);
     console.log('filterType is:', JSON.stringify(filterType));// For debugging
-    // Server will geocode the text query (use server-side API key)
-    if (!query.trim()) {
-      setError('Please enter a location');
+    // 1) Geocode the text query
+    let coords;
+    try {
+      if (!query.trim()) {
+        throw new Error('Please enter a location');
+      }
+      coords = await geocode(query.trim());
+      if (!coords) {
+        throw new Error(`Could not find location “${query.trim()}”`);
+      }
+    } catch (err) {
+      setError(err.message);
       setStores([]);
       setLoading(false);
       return;
     }
 
-    // 2) Build the API URL with q param so server geocodes it
+    // 2) Build the API URL with params
     const params = new URLSearchParams({
-      q:        query.trim(),
+      lat:      coords.lat,
+      lng:      coords.lng,
       radius:   '5000',
       page:     '1',
       limit:    '10'
@@ -104,17 +114,12 @@ export default function App() {
       }
       const data = await res.json();
       console.log('Response data:', data);
-
-      // Defensive handling: ensure debug and deal_tracking_check are objects
-      const dealTrackingCheck = data?.debug?.deal_tracking_check ?? { found: false };
-      console.log('Deal tracking check:', dealTrackingCheck);
-
-      if (data?.success && Array.isArray(data.data)) {
+      if (data.success && data.data) {
         console.log('Setting stores with data.data:', data.data.length, 'items');
         setStores(data.data);
       } else {
-        console.log('Setting stores with fallback:', Array.isArray(data.data) ? data.data : []);
-        setStores(Array.isArray(data.data) ? data.data : []);
+        console.log('Setting stores with fallback:', data.data || data || []);
+        setStores(data.data || data || []);
       }
       } catch (err) {
         console.error('Fetch error:', err);
