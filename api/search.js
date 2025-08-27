@@ -213,7 +213,7 @@ async function getAvailableDeals() {
   }
 }
 async function checkDealTracking(query) {
-  if (!query) return null;
+  if (!query) return { found: false };
   try {
     const dealCoords = await findLocationInDealTracking(query);
     return dealCoords ? {
@@ -393,7 +393,8 @@ module.exports = async function handler(req, res) {
                 error: `Could not find location "${q.trim()}" in geocoding services or deal tracking`,
                 geocoding_error: geocodeErr.message,
                 normalized_query: normalizedQuery,
-                available_deals: await getAvailableDeals()
+                available_deals: await getAvailableDeals(),
+                deal_tracking_check: await checkDealTracking(q)
               });
             }
           } else {
@@ -401,7 +402,8 @@ module.exports = async function handler(req, res) {
             return res.status(404).json({
               error: `Could not find location "${q.trim()}" in geocoding services or deal tracking`,
               geocoding_error: geocodeErr.message,
-              available_deals: await getAvailableDeals()
+              available_deals: await getAvailableDeals(),
+              deal_tracking_check: await checkDealTracking(q)
             });
           }
         }
@@ -501,6 +503,8 @@ module.exports = async function handler(req, res) {
           query: q,
           coordinates: { lat: searchLat, lng: searchLng },
           source: 'deal_tracking_no_database'
+        ,
+          deal_tracking_check: await checkDealTracking(q)
         },
         message: 'Database not configured - deal tracking coordinates found successfully',
         pagination: {
@@ -534,7 +538,9 @@ module.exports = async function handler(req, res) {
               query: q,
               coordinates: { lat: dealCoords.lat, lng: dealCoords.lng },
               source: 'deal_tracking_primary'
-            },
+              ,
+                deal_tracking_check: await checkDealTracking(q)
+              },
             message: 'Database connection failed, using deal tracking coordinates',
             pagination: {
               page: parseInt(page),
@@ -576,7 +582,9 @@ module.exports = async function handler(req, res) {
               query: q,
               coordinates: { lat: dealCoords.lat, lng: dealCoords.lng },
               source: 'deal_tracking_primary'
-            },
+              ,
+                deal_tracking_check: await checkDealTracking(q)
+              },
             message: 'Database query failed, using deal tracking coordinates',
             pagination: {
               page: parseInt(page),
@@ -657,6 +665,8 @@ module.exports = async function handler(req, res) {
           query: q,
           coordinates: { lat: searchLat, lng: searchLng },
           source: 'deal_tracking_database_error'
+        ,
+          deal_tracking_check: await checkDealTracking(q)
         },
         coordinates: { lat: searchLat, lng: searchLng },
         source: 'deal_tracking_fallback',

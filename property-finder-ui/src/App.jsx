@@ -114,12 +114,17 @@ export default function App() {
       }
       const data = await res.json();
       console.log('Response data:', data);
-      if (data.success && data.data) {
+
+      // Defensive handling: ensure debug and deal_tracking_check are objects
+      const dealTrackingCheck = data?.debug?.deal_tracking_check ?? { found: false };
+      console.log('Deal tracking check:', dealTrackingCheck);
+
+      if (data?.success && Array.isArray(data.data)) {
         console.log('Setting stores with data.data:', data.data.length, 'items');
         setStores(data.data);
       } else {
-        console.log('Setting stores with fallback:', data.data || data || []);
-        setStores(data.data || data || []);
+        console.log('Setting stores with fallback:', Array.isArray(data.data) ? data.data : []);
+        setStores(Array.isArray(data.data) ? data.data : []);
       }
       } catch (err) {
         console.error('Fetch error:', err);
