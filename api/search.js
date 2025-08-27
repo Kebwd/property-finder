@@ -512,7 +512,117 @@ module.exports = async function handler(req, res) {
       });
     }
 
-    const result = await pool.query(query, queryParams);
+    console.log('Database pool available, testing connection...');
+    try {
+      // Test database connection first
+      const testClient = await pool.connect();
+      await testClient.query('SELECT 1');
+      testClient.release();
+      console.log('Database connection test successful');
+    } catch (connError) {
+      console.log(`Database connection test failed: ${connError.message}`);
+      // If database connection fails, try deal tracking as primary source
+      if (q && q.trim()) {
+        console.log('Using deal tracking as primary source due to connection failure...');
+        const dealCoords = await findLocationInDealTracking(q.trim());
+        if (dealCoords) {
+          console.log(`Found deal tracking coordinates: ${dealCoords.lat}, ${dealCoords.lng}`);
+          return res.status(200).json({
+            success: true,
+            data: [],
+            debug: {
+              query: q,
+              coordinates: { lat: dealCoords.lat, lng: dealCoords.lng },
+              source: 'deal_tracking_primary'
+            },
+            message: 'Database connection failed, using deal tracking coordinates',
+            pagination: {
+              page: parseInt(page),
+              limit: parseInt(limit),
+              total: 0
+            },
+            timestamp: new Date().toISOString()
+          });
+        }
+      }
+      return res.status(500).json({
+        success: false,
+        error: 'Database connection failed',
+        debug: {
+          query: q,
+          source: 'database_connection_error'
+        },
+        timestamp: new Date().toISOString()
+      });
+    }
+
+    console.log('Executing main database query...');
+    let result;
+    try {
+      result = await pool.query(query, queryParams);
+      console.log(`Database query returned ${result.rows.length} rows`);
+    } catch (dbError) {
+      console.log(`Main database query failed: ${dbError.message}`);
+      // If database fails completely, try deal tracking as primary source
+      if (q && q.trim()) {
+        console.log('Trying deal tracking as primary source due to query failure...');
+        const dealCoords = await findLocationInDealTracking(q.trim());
+        if (dealCoords) {
+          console.log(`Found deal tracking coordinates: ${dealCoords.lat}, ${dealCoords.lng}`);
+          return res.status(200).json({
+            success: true,
+            data: [],
+            debug: {
+              query: q,
+              coordinates: { lat: dealCoords.lat, lng: dealCoords.lng },
+              source: 'deal_tracking_primary'
+            },
+            message: 'Database query failed, using deal tracking coordinates',
+            pagination: {
+              page: parseInt(page),
+              limit: parseInt(limit),
+              total: 0
+            },
+            timestamp: new Date().toISOString()
+          });
+        }
+      }
+      // If no deal tracking, return error
+      return res.status(500).json({
+        success: false,
+        error: 'Database query failed and no deal tracking available',
+        debug: {
+          query: q,
+          source: 'database_query_error'
+        },
+        timestamp: new Date().toISOString()
+      });
+    }
+
+    // Check if we should use deal tracking instead
+    const dealCheck = await checkDealTracking(q);
+    const shouldUseDealTracking = result.rows.length === 0 && dealCheck.found;
+
+    if (shouldUseDealTracking) {
+      console.log('Using deal tracking coordinates instead of empty database results');
+      return res.status(200).json({
+        success: true,
+        data: [],
+        debug: {
+          query: q,
+          original_coordinates: { lat: searchLat, lng: searchLng },
+          deal_tracking_coordinates: dealCheck.coordinates,
+          source: 'deal_tracking_fallback_empty_db'
+        },
+        message: 'Database returned no results, using deal tracking coordinates',
+        pagination: {
+          page: parseInt(page),
+          limit: parseInt(limit),
+          total: 0
+        },
+        timestamp: new Date().toISOString()
+      });
+    }
 
     res.status(200).json({
       success: true,
@@ -521,7 +631,8 @@ module.exports = async function handler(req, res) {
         query: q,
         coordinates: { lat: searchLat, lng: searchLng },
         source: 'database_query',
-        deal_tracking_check: await checkDealTracking(q)
+        row_count: result.rows.length,
+        deal_tracking_check: dealCheck
       },
       pagination: {
         page: parseInt(page),
