@@ -987,6 +987,9 @@ module.exports = async function handler(req, res) {
           original_coordinates: { lat: searchLat, lng: searchLng },
           deal_tracking_coordinates: dealCheck.coordinates,
           source: 'deal_tracking_fallback_empty_db'
+        ,
+          debugExtras: debugExtras || {},
+          nearest_distance_m: result.nearest_distance_m || null
         },
         message: 'Database returned no results, using deal tracking coordinates',
         pagination: {
@@ -1007,6 +1010,9 @@ module.exports = async function handler(req, res) {
         source: 'database_query',
         row_count: result.rows.length,
         deal_tracking_check: dealCheck
+      ,
+        debugExtras: debugExtras || {},
+        nearest_distance_m: result.nearest_distance_m || null
       },
       pagination: {
         page: parseInt(page),
