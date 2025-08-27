@@ -1,12 +1,18 @@
 const { Pool } = require('pg');
-const fetch = require('node-fetch');
+const https = require('https');
 const fs = require('fs');
 const path = require('path');
 
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-  ssl: { rejectUnauthorized: false }
-});
+// Initialize pool only if DATABASE_URL is available
+let pool = null;
+if (process.env.DATABASE_URL) {
+  pool = new Pool({
+    connectionString: process.env.DATABASE_URL,
+    ssl: { rejectUnauthorized: false }
+  });
+} else {
+  console.log('DATABASE_URL not set - database functionality disabled');
+}
 
 // Geocoding functions
 const NOMINATIM_BASE = 'https://nominatim.openstreetmap.org/search';
@@ -25,23 +31,112 @@ function normalizeEstateName(query) {
 }
 
 async function tryNominatim(query) {
-  const url = `${NOMINATIM_BASE}?q=${encodeURIComponent(query)}&format=json&limit=1`;
-  const res = await fetch(url, { headers: { 'User-Agent': 'YourApp/1.0' } });
-  if (!res.ok) throw new Error(`Nominatim HTTP ${res.status}`);
-  const data = await res.json();
-  if (data.length === 0) return null;
-  return { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) };
+  return new Promise((resolve, reject) => {
+    const url = `${NOMINATIM_BASE}?q=${encodeURIComponent(query)}&format=json&limit=1`;
+    const urlObj = new URL(url);
+
+    const options = {
+      hostname: urlObj.hostname,
+      path: urlObj.pathname + urlObj.search,
+      method: 'GET',
+      headers: {
+        'User-Agent': 'YourApp/1.0'
+      }
+    };
+
+    const req = https.request(options, (res) => {
+      let data = '';
+
+      res.on('data', (chunk) => {
+        data += chunk;
+      });
+
+      res.on('end', () => {
+        try {
+          if (res.statusCode !== 200) {
+            reject(new Error(`Nominatim HTTP ${res.statusCode}`));
+            return;
+          }
+
+          const jsonData = JSON.parse(data);
+          if (jsonData.length === 0) {
+            resolve(null);
+            return;
+          }
+
+          resolve({
+            lat: parseFloat(jsonData[0].lat),
+            lng: parseFloat(jsonData[0].lon)
+          });
+        } catch (err) {
+          reject(err);
+        }
+      });
+    });
+
+    req.on('error', (err) => {
+      reject(err);
+    });
+
+    req.end();
+  });
 }
 
 async function tryGoogle(query) {
-  const key = process.env.GEOCODING_API_KEY;
-  const url = `${GOOGLE_BASE}?address=${encodeURIComponent(query)}&components=country:HK&key=${key}`;
-  const res = await fetch(url);
-  if (!res.ok) throw new Error(`Google HTTP ${res.status}`);
-  const body = await res.json();
-  if (body.status !== 'OK' || !body.results.length) return null;
-  const loc = body.results[0].geometry.location;
-  return { lat: loc.lat, lng: loc.lng };
+  return new Promise((resolve, reject) => {
+    const key = process.env.GEOCODING_API_KEY;
+    if (!key) {
+      console.log('No Google Maps API key available');
+      resolve(null);
+      return;
+    }
+
+    const url = `${GOOGLE_BASE}?address=${encodeURIComponent(query)}&components=country:HK&key=${key}`;
+    const urlObj = new URL(url);
+
+    const options = {
+      hostname: urlObj.hostname,
+      path: urlObj.pathname + urlObj.search,
+      method: 'GET'
+    };
+
+    const req = https.request(options, (res) => {
+      let data = '';
+
+      res.on('data', (chunk) => {
+        data += chunk;
+      });
+
+      res.on('end', () => {
+        try {
+          if (res.statusCode !== 200) {
+            reject(new Error(`Google HTTP ${res.statusCode}`));
+            return;
+          }
+
+          const jsonData = JSON.parse(data);
+          if (jsonData.status !== 'OK' || !jsonData.results || jsonData.results.length === 0) {
+            resolve(null);
+            return;
+          }
+
+          const loc = jsonData.results[0].geometry.location;
+          resolve({
+            lat: loc.lat,
+            lng: loc.lng
+          });
+        } catch (err) {
+          reject(err);
+        }
+      });
+    });
+
+    req.on('error', (err) => {
+      reject(err);
+    });
+
+    req.end();
+  });
 }
 
 async function geocode(query) {
@@ -98,6 +193,7 @@ async function geocode(query) {
 async function getAvailableDeals() {
   try {
     const possiblePaths = [
+      path.join(process.cwd(), 'deal_tracking.json'),  // Local copy in api directory (highest priority)
       path.join(process.cwd(), '../scraper/deal_tracking.json'),
       path.join(process.cwd(), '../../scraper/deal_tracking.json'),
       path.join(process.cwd(), 'scraper/deal_tracking.json'),
@@ -116,34 +212,57 @@ async function getAvailableDeals() {
     return [];
   }
 }
+async function checkDealTracking(query) {
+  if (!query) return null;
+  try {
+    const dealCoords = await findLocationInDealTracking(query);
+    return dealCoords ? {
+      found: true,
+      coordinates: { lat: dealCoords.lat, lng: dealCoords.lng },
+      deal: dealCoords.deal
+    } : { found: false };
+  } catch (err) {
+    return { found: false, error: err.message };
+  }
+}
 async function findLocationInDealTracking(query) {
+  console.log(`🔍 Searching deal tracking for: "${query}"`);
+  console.log(`📂 Current working directory: ${process.cwd()}`);
+
   try {
     // Try multiple possible paths for Vercel deployment
     const possiblePaths = [
+      path.join(process.cwd(), 'deal_tracking.json'),  // Local copy in api directory (highest priority)
       path.join(process.cwd(), '../scraper/deal_tracking.json'),
       path.join(process.cwd(), '../../scraper/deal_tracking.json'),
       path.join(process.cwd(), 'scraper/deal_tracking.json'),
       '/tmp/deal_tracking.json'  // In case it's copied to tmp
     ];
 
+    console.log('🔍 Checking possible paths:');
+    possiblePaths.forEach(p => console.log(`   - ${p}`));
+
     let dealTrackingPath = null;
     for (const testPath of possiblePaths) {
+      console.log(`🔍 Checking: ${testPath}`);
       if (fs.existsSync(testPath)) {
         dealTrackingPath = testPath;
-        console.log(`Found deal tracking file at: ${testPath}`);
+        console.log(`✅ Found deal tracking file at: ${testPath}`);
         break;
+      } else {
+        console.log(`❌ Not found: ${testPath}`);
       }
     }
 
     if (!dealTrackingPath) {
-      console.log('Deal tracking file not found in any expected location');
+      console.log('❌ Deal tracking file not found in any expected location');
       return null;
     }
 
     const data = JSON.parse(fs.readFileSync(dealTrackingPath, 'utf8'));
     const deals = data.current_deals || [];
 
-    console.log(`Searching ${deals.length} deals for query: "${query}"`);
+    console.log(`📋 Found ${deals.length} deals in file`);
 
     // Search for query in deal strings with improved matching
     for (const dealString of deals) {
@@ -153,7 +272,7 @@ async function findLocationInDealTracking(query) {
       const building = parts[0];
       const fullAddress = parts[1];
 
-      console.log(`Checking deal: ${building} -> ${fullAddress}`);
+      console.log(`🔍 Checking deal: ${building} -> ${fullAddress}`);
 
       // Multiple matching strategies
       const matches = [
@@ -170,7 +289,7 @@ async function findLocationInDealTracking(query) {
       ];
 
       if (matches.some(match => match)) {
-        console.log(`Found matching deal: ${dealString}`);
+        console.log(`✅ Found matching deal: ${dealString}`);
 
         // Extract location info from deal string
         const location = parts[1];
@@ -190,16 +309,16 @@ async function findLocationInDealTracking(query) {
           lat = 22.4414; lng = 114.0222; // Yuen Long
         }
 
-        console.log(`Using coordinates for ${location}: ${lat}, ${lng}`);
+        console.log(`📍 Using coordinates for ${location}: ${lat}, ${lng}`);
         return { lat, lng, source: 'deal_tracking', deal: dealString };
       }
     }
 
-    console.log(`No matching deals found for query: "${query}"`);
+    console.log(`❌ No matching deals found for query: "${query}"`);
     return null;
 
   } catch (err) {
-    console.error('Deal tracking search error:', err);
+    console.error('❌ Deal tracking search error:', err);
     return null;
   }
 }
@@ -240,31 +359,36 @@ module.exports = async function handler(req, res) {
 
     // If query provided, geocode it first
     if (q && q.trim()) {
+      console.log('🔍 Starting search for query:', q.trim());
+
       try {
         const coords = await geocode(q.trim());
         searchLat = coords.lat;
         searchLng = coords.lng;
-        console.log('Geocoded coordinates:', coords);
+        console.log('✅ Geocoding successful:', coords);
       } catch (geocodeErr) {
-        console.warn('Geocoding failed, trying deal tracking fallback:', geocodeErr.message);
+        console.warn('❌ Geocoding failed:', geocodeErr.message);
+        console.log('🔄 Trying deal tracking fallback...');
 
         // Try to find location in deal tracking
         const dealCoords = await findLocationInDealTracking(q.trim());
         if (dealCoords) {
           searchLat = dealCoords.lat;
           searchLng = dealCoords.lng;
-          console.log(`Found location in deal tracking: ${searchLat}, ${searchLng} from deal: ${dealCoords.deal}`);
+          console.log(`✅ Found location in deal tracking: ${searchLat}, ${searchLng} from deal: ${dealCoords.deal}`);
         } else {
+          console.log('❌ Deal tracking also failed');
           // Try with normalized query as well
           const normalizedQuery = normalizeEstateName(q.trim());
           if (normalizedQuery !== q.trim()) {
-            console.log(`Trying normalized query: "${normalizedQuery}"`);
+            console.log(`🔄 Trying normalized query: "${normalizedQuery}"`);
             const normalizedCoords = await findLocationInDealTracking(normalizedQuery);
             if (normalizedCoords) {
               searchLat = normalizedCoords.lat;
               searchLng = normalizedCoords.lng;
-              console.log(`Found location with normalized query: ${searchLat}, ${searchLng}`);
+              console.log(`✅ Found location with normalized query: ${searchLat}, ${searchLng}`);
             } else {
+              console.log('❌ Normalized query also failed');
               return res.status(404).json({
                 error: `Could not find location "${q.trim()}" in geocoding services or deal tracking`,
                 geocoding_error: geocodeErr.message,
@@ -273,6 +397,7 @@ module.exports = async function handler(req, res) {
               });
             }
           } else {
+            console.log('❌ No fallback options available');
             return res.status(404).json({
               error: `Could not find location "${q.trim()}" in geocoding services or deal tracking`,
               geocoding_error: geocodeErr.message,
@@ -365,11 +490,39 @@ module.exports = async function handler(req, res) {
     `;
 
     const queryParams = [searchLat, searchLng, searchRadius, parseInt(limit), offset];
+
+    // Check if database is available
+    if (!pool) {
+      console.log('Database not available, returning coordinates only');
+      return res.status(200).json({
+        success: true,
+        data: [],
+        debug: {
+          query: q,
+          coordinates: { lat: searchLat, lng: searchLng },
+          source: 'deal_tracking_no_database'
+        },
+        message: 'Database not configured - deal tracking coordinates found successfully',
+        pagination: {
+          page: parseInt(page),
+          limit: parseInt(limit),
+          total: 0
+        },
+        timestamp: new Date().toISOString()
+      });
+    }
+
     const result = await pool.query(query, queryParams);
 
     res.status(200).json({
       success: true,
       data: result.rows,
+      debug: {
+        query: q,
+        coordinates: { lat: searchLat, lng: searchLng },
+        source: 'database_query',
+        deal_tracking_check: await checkDealTracking(q)
+      },
       pagination: {
         page: parseInt(page),
         limit: parseInt(limit),
@@ -382,6 +535,31 @@ module.exports = async function handler(req, res) {
     console.error('Search API error:', error);
     console.error('Error stack:', error.stack);
     console.error('Query params:', req.query);
+
+    // Check if this is a database connection error
+    if (error.message && error.message.includes('connect')) {
+      console.log('Database connection error - returning deal tracking coordinates only');
+      return res.status(200).json({
+        success: true,
+        data: [],
+        debug: {
+          query: q,
+          coordinates: { lat: searchLat, lng: searchLng },
+          source: 'deal_tracking_database_error'
+        },
+        coordinates: { lat: searchLat, lng: searchLng },
+        source: 'deal_tracking_fallback',
+        message: 'Database connection failed, but deal tracking coordinates found successfully',
+        error: error.message,
+        pagination: {
+          page: parseInt(page),
+          limit: parseInt(limit),
+          total: 0
+        },
+        timestamp: new Date().toISOString()
+      });
+    }
+
     res.status(500).json({
       success: false,
       error: error.message || 'Internal server error',
