@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import DataImportExport from './DataImportExport';
-import { geocode }      from './utils/geocode';
+// server will perform geocoding using a server-side API key
 import './App.css';
 
 export default function App() {
@@ -62,27 +62,17 @@ export default function App() {
     setError('');
     setLoading(true);
     console.log('filterType is:', JSON.stringify(filterType));// For debugging
-    // 1) Geocode the text query
-    let coords;
-    try {
-      if (!query.trim()) {
-        throw new Error('Please enter a location');
-      }
-      coords = await geocode(query.trim());
-      if (!coords) {
-        throw new Error(`Could not find location “${query.trim()}”`);
-      }
-    } catch (err) {
-      setError(err.message);
+    // Server will geocode the text query (use server-side API key)
+    if (!query.trim()) {
+      setError('Please enter a location');
       setStores([]);
       setLoading(false);
       return;
     }
 
-    // 2) Build the API URL with params
+    // 2) Build the API URL with q param so server geocodes it
     const params = new URLSearchParams({
-      lat:      coords.lat,
-      lng:      coords.lng,
+      q:        query.trim(),
       radius:   '5000',
       page:     '1',
       limit:    '10'

@@ -568,6 +568,28 @@ module.exports = async function handler(req, res) {
       result = await pool.query(query, queryParams);
       console.log(`Database query returned ${result.rows.length} rows`);
 
+      // Compute nearest DB point distance to the searched coordinates for diagnostics
+      try {
+        const nearSql = `
+          SELECT l.lat, l.long,
+            ST_Distance(
+              ST_SetSRID(ST_Point(l.long, l.lat), 4326)::geography,
+              ST_SetSRID(ST_Point($2, $1), 4326)::geography
+            ) AS distance
+          FROM location_info l
+          ORDER BY distance
+          LIMIT 1
+        `;
+        const nearRes = await pool.query(nearSql, [searchLat, searchLng]);
+        if (nearRes.rows && nearRes.rows[0]) {
+          console.log('Nearest DB point distance (m):', nearRes.rows[0].distance);
+          // attach to result debug for later
+          result.nearest_distance_m = nearRes.rows[0].distance;
+        }
+      } catch (nearErr) {
+        console.log('Nearest-point diagnostic failed:', nearErr.message);
+      }
+
       // If the spatial query did not return any row that matches the query text
       // (e.g., building name), run a lightweight text-search fallback to find
       // properties by name and merge them into the results. This helps when
