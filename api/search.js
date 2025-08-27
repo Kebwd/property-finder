@@ -567,6 +567,154 @@ module.exports = async function handler(req, res) {
     try {
       result = await pool.query(query, queryParams);
       console.log(`Database query returned ${result.rows.length} rows`);
+
+      // If the spatial query did not return any row that matches the query text
+      // (e.g., building name), run a lightweight text-search fallback to find
+      // properties by name and merge them into the results. This helps when
+      // geocoding places the search point away from the actual property.
+      const rows = result.rows || [];
+      const qText = (q || '').trim();
+      try {
+        const hasNameMatch = rows.some(r => {
+          const candidates = [r.building_name_zh, r.estate_name_zh, r.building_name, r.name].filter(Boolean);
+          return candidates.some(c => String(c).includes(qText));
+        });
+
+        if (qText && qText.length > 1 && !hasNameMatch) {
+          console.log('No name match in spatial results — running prioritized text-search for:', qText);
+
+          // 1) Try exact case-insensitive match first (prioritize exact building/estate names)
+          const exactSql = `
+            SELECT * FROM (
+              SELECT
+                'business' AS source,
+                b.id,
+                b.type,
+                b.building_name_zh as name,
+                NULL as estate_name_zh,
+                b.building_name_zh,
+                b.floor,
+                b.unit,
+                b.area,
+                b.deal_price,
+                b.deal_date,
+                l.province,
+                l.city,
+                l.town,
+                l.street,
+                l.lat,
+                l.long,
+                0 as distance
+              FROM business b
+              JOIN location_info l ON b.location_id = l.id
+              WHERE (LOWER(b.building_name_zh) = LOWER($1) OR LOWER(b.building_name) = LOWER($1))
+
+              UNION ALL
+
+              SELECT
+                'house' AS source,
+                h.id,
+                h.type,
+                COALESCE(NULLIF(h.estate_name_zh, ''), NULLIF(h.building_name_zh, ''), h.building_name_zh) as name,
+                h.estate_name_zh,
+                h.building_name_zh,
+                h.floor,
+                h.unit,
+                h.area,
+                h.deal_price,
+                h.deal_date,
+                l.province,
+                l.city,
+                l.town,
+                l.street,
+                l.lat,
+                l.long,
+                0 as distance
+              FROM house h
+              JOIN location_info l ON h.location_id = l.id
+              WHERE (LOWER(h.estate_name_zh) = LOWER($1) OR LOWER(h.building_name_zh) = LOWER($1) OR LOWER(h.building_name) = LOWER($1))
+            ) AS t
+            LIMIT $2
+          `;
+
+          let textRes = await pool.query(exactSql, [qText, parseInt(limit)]);
+          console.log(`Exact-name text-search returned ${textRes.rows.length} rows`);
+
+          // 2) If no exact matches, run the looser wildcard ILIKE search
+          if (!textRes.rows.length) {
+            console.log('No exact-name matches found, running wildcard ILIKE text search');
+            const textSql = `
+              SELECT * FROM (
+                SELECT
+                  'business' AS source,
+                  b.id,
+                  b.type,
+                  b.building_name_zh as name,
+                  NULL as estate_name_zh,
+                  b.building_name_zh,
+                  b.floor,
+                  b.unit,
+                  b.area,
+                  b.deal_price,
+                  b.deal_date,
+                  l.province,
+                  l.city,
+                  l.town,
+                  l.street,
+                  l.lat,
+                  l.long,
+                  0 as distance
+                FROM business b
+                JOIN location_info l ON b.location_id = l.id
+                WHERE (b.building_name_zh ILIKE $1 OR b.building_name ILIKE $1)
+
+                UNION ALL
+
+                SELECT
+                  'house' AS source,
+                  h.id,
+                  h.type,
+                  COALESCE(NULLIF(h.estate_name_zh, ''), NULLIF(h.building_name_zh, ''), h.building_name_zh) as name,
+                  h.estate_name_zh,
+                  h.building_name_zh,
+                  h.floor,
+                  h.unit,
+                  h.area,
+                  h.deal_price,
+                  h.deal_date,
+                  l.province,
+                  l.city,
+                  l.town,
+                  l.street,
+                  l.lat,
+                  l.long,
+                  0 as distance
+                FROM house h
+                JOIN location_info l ON h.location_id = l.id
+                WHERE (h.estate_name_zh ILIKE $1 OR h.building_name_zh ILIKE $1 OR h.building_name ILIKE $1)
+              ) AS t
+              LIMIT $2
+            `;
+
+            textRes = await pool.query(textSql, [`%${qText}%`, parseInt(limit)]);
+            console.log(`Wildcard text-search returned ${textRes.rows.length} rows`);
+          }
+
+          // Merge unique rows (by source + id)
+          const existing = new Set(rows.map(r => `${r.source}_${r.id}`));
+          for (const r of (textRes.rows || [])) {
+            const key = `${r.source}_${r.id}`;
+            if (!existing.has(key)) {
+              rows.push(r);
+              existing.add(key);
+            }
+          }
+          // Replace result.rows with merged rows
+          result.rows = rows;
+        }
+      } catch (textErr) {
+        console.log('Text-search fallback failed:', textErr.message);
+      }
     } catch (dbError) {
       console.log(`Main database query failed: ${dbError.message}`);
       // If database fails completely, try deal tracking as primary source
