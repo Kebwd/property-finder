@@ -212,6 +212,106 @@ async function getAvailableDeals() {
     return [];
   }
 }
+// Find location_info IDs that look like the query (exact then wildcard)
+async function findLocationInfoIds(query) {
+  if (!query || !pool) return [];
+  const qText = query.trim();
+  if (!qText) return [];
+  try {
+    // Try exact matches first on common address fields
+    const exactSql = `
+      SELECT id FROM location_info
+      WHERE LOWER(town) = LOWER($1)
+         OR LOWER(street) = LOWER($1)
+         OR LOWER(CONCAT(town, ' ', street)) = LOWER($1)
+      LIMIT 10
+    `;
+    let res = await pool.query(exactSql, [qText]);
+    if (res.rows && res.rows.length) return res.rows.map(r => r.id);
+
+    // Fallback to wildcard search
+    const likeSql = `
+      SELECT id FROM location_info
+      WHERE town ILIKE $1 OR street ILIKE $1 OR CONCAT(town, ' ', street) ILIKE $1
+      LIMIT 50
+    `;
+    res = await pool.query(likeSql, [`%${qText}%`]);
+    return (res.rows || []).map(r => r.id);
+  } catch (err) {
+    console.log('findLocationInfoIds error:', err.message);
+    return [];
+  }
+}
+
+// Fetch rows from house/business that belong to any of the given location_ids
+async function fetchRowsByLocationIds(locationIds, limit) {
+  if (!locationIds || !locationIds.length || !pool) return [];
+  // build parameter placeholders
+  const placeholders = locationIds.map((_, i) => `$${i + 1}`).join(',');
+  const limitParam = `$${locationIds.length + 1}`;
+
+  const sql = `
+    SELECT * FROM (
+      SELECT
+        'business' AS source,
+        b.id,
+        b.type,
+        b.building_name_zh as name,
+        NULL as estate_name_zh,
+        b.building_name_zh,
+        b.floor,
+        b.unit,
+        b.area,
+        b.deal_price,
+        b.deal_date,
+        l.province,
+        l.city,
+        l.town,
+        l.street,
+        l.lat,
+        l.long,
+        0 as distance
+      FROM business b
+      JOIN location_info l ON b.location_id = l.id
+      WHERE b.location_id IN (${placeholders})
+
+      UNION ALL
+
+      SELECT
+        'house' AS source,
+        h.id,
+        h.type,
+        COALESCE(NULLIF(h.estate_name_zh, ''), NULLIF(h.building_name_zh, ''), h.building_name_zh) as name,
+        h.estate_name_zh,
+        h.building_name_zh,
+        h.floor,
+        h.unit,
+        h.area,
+        h.deal_price,
+        h.deal_date,
+        l.province,
+        l.city,
+        l.town,
+        l.street,
+        l.lat,
+        l.long,
+        0 as distance
+      FROM house h
+      JOIN location_info l ON h.location_id = l.id
+      WHERE h.location_id IN (${placeholders})
+    ) AS t
+    LIMIT ${limitParam}
+  `;
+
+  const params = [...locationIds, parseInt(limit)];
+  try {
+    const res = await pool.query(sql, params);
+    return res.rows || [];
+  } catch (err) {
+    console.log('fetchRowsByLocationIds error:', err.message);
+    return [];
+  }
+}
 async function checkDealTracking(query) {
   if (!query) return { found: false };
   try {
@@ -733,6 +833,32 @@ module.exports = async function handler(req, res) {
           }
           // Replace result.rows with merged rows
           result.rows = rows;
+          // If still not containing an exact-name or if user expects a location-name match,
+          // try searching `location_info` table first and fetch associated rows by location_id.
+          try {
+            const locationIds = await findLocationInfoIds(qText);
+            if (locationIds && locationIds.length) {
+              console.log('Found location_info IDs for query, fetching associated rows:', locationIds.slice(0,10));
+              const locRows = await fetchRowsByLocationIds(locationIds, parseInt(limit));
+              if (locRows && locRows.length) {
+                // Merge but prioritize these rows at the front
+                const existing = new Set(result.rows.map(r => `${r.source}_${r.id}`));
+                const merged = [];
+                for (const r of locRows) {
+                  const key = `${r.source}_${r.id}`;
+                  if (!existing.has(key)) {
+                    merged.push(r);
+                    existing.add(key);
+                  }
+                }
+                // append remaining original rows
+                for (const r of result.rows) merged.push(r);
+                result.rows = merged;
+              }
+            }
+          } catch (locErr) {
+            console.log('location_info fallback failed:', locErr.message);
+          }
         }
       } catch (textErr) {
         console.log('Text-search fallback failed:', textErr.message);
