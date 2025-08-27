@@ -24,7 +24,7 @@ export const buildWhereClause = (lat, lng, radius) => {
 };
 router.get('/all', async (req, res, next) => {
   try {
-    const { q, lat, lng, radius = '5000', type, dateRange } = req.query;
+    const { q, lat, lng, radius = '3000', type, dateRange } = req.query;
     let searchLat, searchLng;
     let dateThreshold;
 
