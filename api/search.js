@@ -716,36 +716,38 @@ module.exports = async function handler(req, res) {
     let paramIdx = 6; // $1-$5 are used for lat, lng, radius, limit, offset
     const queryParams = [searchLat, searchLng, searchRadius, parseInt(limit), offset];
 
+    // Define business and house types
+    const businessTypes = ['寫字樓', '工商', '商舖', '車位', '辦公室', '廠房', '倉庫'];
+    const houseTypes = ['住宅單位', '別墅', '公寓', '土地'];
+
+    let typeFilterH = '';
+    let dateFilterH = '';
+    let paramIdxH = paramIdx;
+
     if (type && type !== 'all') {
-      typeFilter = ` AND b.type = $${paramIdx}`;
-      queryParams.push(type);
-      paramIdx++;
+      if (businessTypes.includes(type)) {
+        typeFilter = ` AND b.type = $${paramIdx}`;
+        queryParams.push(type);
+        paramIdx++;
+      }
+      if (houseTypes.includes(type)) {
+        typeFilterH = ` AND h.type = $${paramIdxH}`;
+        queryParams.push(type);
+        paramIdxH++;
+      }
     }
     if (date_from) {
       dateFilter += ` AND b.deal_date >= $${paramIdx}`;
       queryParams.push(date_from);
       paramIdx++;
-    }
-    if (date_to) {
-      dateFilter += ` AND b.deal_date <= $${paramIdx}`;
-      queryParams.push(date_to);
-      paramIdx++;
-    }
-
-    let typeFilterH = '';
-    let dateFilterH = '';
-    let paramIdxH = paramIdx;
-    if (type && type !== 'all') {
-      typeFilterH = ` AND h.type = $${paramIdxH}`;
-      queryParams.push(type);
-      paramIdxH++;
-    }
-    if (date_from) {
       dateFilterH += ` AND h.deal_date >= $${paramIdxH}`;
       queryParams.push(date_from);
       paramIdxH++;
     }
     if (date_to) {
+      dateFilter += ` AND b.deal_date <= $${paramIdx}`;
+      queryParams.push(date_to);
+      paramIdx++;
       dateFilterH += ` AND h.deal_date <= $${paramIdxH}`;
       queryParams.push(date_to);
       paramIdxH++;
