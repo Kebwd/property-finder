@@ -1274,36 +1274,48 @@ module.exports = async function handler(req, res) {
       });
     }
 
-    // Group by location_id to collapse units into one building row
-    const grouped = new Map();
-    for (const r of result.rows) {
-      const lid = r.location_id;
-      if (!grouped.has(lid)) {
-        grouped.set(lid, { ...r, units_count: 0, sample_units: [] });
-      }
-      const g = grouped.get(lid);
-      g.units_count += 1;
-      if (g.sample_units.length < 3) g.sample_units.push({ id: r.id, floor: r.floor, unit: r.unit, type: r.source });
+    // Optionally group by location_id, controlled by 'group' query param
+    let groupByLocation = true;
+    if (typeof req.query.group !== 'undefined') {
+      groupByLocation = req.query.group !== 'false';
     }
-    const groupedRows = Array.from(grouped.values());
+
+    let responseRows, grouped_by_location_id;
+    if (groupByLocation) {
+      const grouped = new Map();
+      for (const r of result.rows) {
+        const lid = r.location_id;
+        if (!grouped.has(lid)) {
+          grouped.set(lid, { ...r, units_count: 0, sample_units: [] });
+        }
+        const g = grouped.get(lid);
+        g.units_count += 1;
+        if (g.sample_units.length < 3) g.sample_units.push({ id: r.id, floor: r.floor, unit: r.unit, type: r.source });
+      }
+      responseRows = Array.from(grouped.values());
+      grouped_by_location_id = true;
+    } else {
+      responseRows = result.rows;
+      grouped_by_location_id = false;
+    }
 
     res.status(200).json({
       success: true,
-      data: groupedRows,
+      data: responseRows,
       debug: {
         query: q,
         coordinates: { lat: searchLat, lng: searchLng },
         source: 'database_query',
-        row_count: groupedRows.length,
+        row_count: responseRows.length,
         deal_tracking_check: dealCheck,
         debugExtras: debugExtras || {},
         nearest_distance_m: result.nearest_distance_m || null,
-        grouped_by_location_id: true
+        grouped_by_location_id
       },
       pagination: {
         page: parseInt(page),
         limit: parseInt(limit),
-        total: groupedRows.length
+        total: responseRows.length
       },
       timestamp: new Date().toISOString()
     });
