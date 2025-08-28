@@ -80,6 +80,18 @@ property-finder/
 - **Security**: API key authentication
 - **Target**: Vercel deployment endpoint
 
+## 📥 Download GeoJSON District Files
+
+GeoJSON district files are not included in the repository. Download them before running the scraper:
+
+1. Download with PowerShell:
+   ```powershell
+   powershell -ExecutionPolicy Bypass -File download_geojson.ps1
+   ```
+2. If you need to update the download links, edit `download_geojson.ps1` and replace the file IDs with your own from Google Drive.
+
+Google Drive folder: https://drive.google.com/drive/folders/1ydSU3zDW35uPTvP1UbhAE0QxDsTtIMv0?usp=drive_link
+
 ## 🧪 Testing the Deployment
 
 ```bash

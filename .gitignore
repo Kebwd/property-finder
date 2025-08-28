@@ -87,3 +87,6 @@ secrets/
 *.key
 *.pem
 .vercel
+
+# Ignore GeoJSON district files
+scraper/config/districts/*.geojson
