@@ -1113,11 +1113,12 @@ module.exports = async function handler(req, res) {
           // If still not containing an exact-name or if user expects a location-name match,
           // try searching `location_info` table first and fetch associated rows by location_id.
           try {
-      const locationIds = await findLocationInfoIds(qText);
-      debugExtras.location_info_ids = locationIds;
+            const locationIds = await findLocationInfoIds(qText);
+            debugExtras.location_info_ids = locationIds;
             if (locationIds && locationIds.length) {
               console.log('Found location_info IDs for query, fetching associated rows:', locationIds.slice(0,10));
-              const locRows = await fetchRowsByLocationIds(locationIds, parseInt(limit));
+              // For broad queries (like town/city), fetch ALL associated buildings (ignore limit)
+              const locRows = await fetchRowsByLocationIds(locationIds, 200);
               if (locRows && locRows.length) {
                 debugExtras.location_rows_count = locRows.length;
                 // Merge but prioritize these rows at the front
