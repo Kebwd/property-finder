@@ -6,6 +6,7 @@ import requests
 from ..coordinate import geocode
 import geopandas as gpd
 from shapely.geometry import Point
+import pandas as pd
 
 normalizer = NormalizationPipeline()
 
