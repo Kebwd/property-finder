@@ -4,6 +4,8 @@ import psycopg2
 from .normalization_pipeline import NormalizationPipeline
 import requests
 from ..coordinate import geocode
+import geopandas as gpd
+from shapely.geometry import Point
 
 normalizer = NormalizationPipeline()
 
@@ -14,6 +16,18 @@ async def get_coordinates(address):
     except Exception as e:
         pass
     return coords
+
+# Load GeoJSON files and merge into a single GeoDataFrame
+geojson_files = ["path/to/district1.geojson", "path/to/district2.geojson"]
+districts = gpd.GeoDataFrame(pd.concat([gpd.read_file(file) for file in geojson_files], ignore_index=True))
+
+def assign_district(lat, lon):
+    """Assign district based on latitude and longitude."""
+    point = Point(lon, lat)
+    for _, district in districts.iterrows():
+        if district['geometry'].contains(point):
+            return district['name']  # Assuming 'name' column contains district names
+    return None
 
 class StorePipeline:
     def open_spider(self, spider):
@@ -74,6 +88,14 @@ class StorePipeline:
             spider.logger.error(f"❌ Database error: {e}")
             spider.logger.error(f"   Item: {item}")
         
+        # Assign district based on geospatial data
+        lat = item.get('latitude')
+        lon = item.get('longitude')
+        if lat and lon:
+            item['dist'] = assign_district(lat, lon)
+        else:
+            spider.logger.warning("⚠️  Missing latitude/longitude for district assignment")
+
         return item
 
     def _process_hong_kong_item(self, item, spider):
