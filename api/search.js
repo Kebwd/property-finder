@@ -646,63 +646,9 @@ module.exports = async function handler(req, res) {
   // Extra debug info collected during processing
   const debugExtras = {};
 
-    // If query provided, always include properties where building_name_zh ILIKE %query%
+
+    // Always geocode if query is provided
     if (q && q.trim()) {
-      const broadNameSql = `
-        SELECT * FROM (
-          SELECT 'business' AS source, b.id, b.type, b.building_name_zh as name, NULL as estate_name_zh, b.building_name_zh, b.floor, b.unit, b.area, b.deal_price, b.deal_date, l.province, l.city, l.town, l.street, l.lat, l.long, 0 as distance
-          FROM business b JOIN location_info l ON b.location_id = l.id
-          WHERE b.building_name_zh ILIKE $1
-          UNION ALL
-          SELECT 'house' AS source, h.id, h.type, COALESCE(NULLIF(h.estate_name_zh, ''), NULLIF(h.building_name_zh, ''), h.building_name_zh) as name, h.estate_name_zh, h.building_name_zh, h.floor, h.unit, h.area, h.deal_price, h.deal_date, l.province, l.city, l.town, l.street, l.lat, l.long, 0 as distance
-          FROM house h JOIN location_info l ON h.location_id = l.id
-          WHERE h.building_name_zh ILIKE $1 OR h.estate_name_zh ILIKE $1
-        ) AS t
-        LIMIT 200
-      `;
-      let broadNameRows = [];
-      try {
-        broadNameRows = (await pool.query(broadNameSql, [`%${q.trim()}%`])).rows || [];
-      } catch (err) {
-        console.log('Broad building_name_zh search failed:', err.message);
-      }
-      try {
-        const primaryTextRows = await runTextSearchPrimary(q.trim(), limit);
-        // Merge broadNameRows and primaryTextRows, dedupe by source+id
-        const allRows = [...(primaryTextRows || [])];
-        const seen = new Set(allRows.map(r => `${r.source || ''}:${r.id}`));
-        for (const r of broadNameRows) {
-          const key = `${r.source || ''}:${r.id}`;
-          if (!seen.has(key)) {
-            allRows.push(r);
-            seen.add(key);
-          }
-        }
-        if (allRows.length) {
-          console.log('Text search + broad building_name_zh returned rows; returning as priority results');
-          return res.status(200).json({
-            success: true,
-            data: allRows,
-            debug: {
-              query: q,
-              source: 'primary_text_search',
-              row_count: allRows.length
-            },
-            pagination: {
-              page: parseInt(page),
-              limit: parseInt(limit),
-              total: allRows.length
-            },
-            timestamp: new Date().toISOString()
-          });
-        }
-      } catch (ptErr) {
-        console.log('Primary text search failed, falling back to geocoding:', ptErr.message);
-      }
-
-  // If query provided, geocode it first
-      console.log('🔍 Starting search for query:', q.trim());
-
       try {
         const coords = await geocode(q.trim());
         searchLat = coords.lat;
@@ -711,7 +657,6 @@ module.exports = async function handler(req, res) {
       } catch (geocodeErr) {
         console.warn('❌ Geocoding failed:', geocodeErr.message);
         console.log('🔄 Trying deal tracking fallback...');
-
         // Try to find location in deal tracking
         const dealCoords = await findLocationInDealTracking(q.trim());
         if (dealCoords) {
