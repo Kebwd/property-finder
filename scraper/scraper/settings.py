@@ -73,7 +73,7 @@ DOWNLOADER_MIDDLEWARES = {
 # ScraperAPI Optimized settings for maximum success
 CONCURRENT_REQUESTS = 1          # Conservative with premium proxy
 CONCURRENT_REQUESTS_PER_DOMAIN = 1  # Single request per domain (ScraperAPI handles rotation)
-DOWNLOAD_DELAY = 0               # Let ScraperAPI handle timing
+DOWNLOAD_DELAY = 10              # Let ScraperAPI handle timing
 RANDOMIZE_DOWNLOAD_DELAY = 0     # ScraperAPI manages request timing
 
 # AutoThrottle optimized for ScraperAPI
