@@ -1113,31 +1113,75 @@ module.exports = async function handler(req, res) {
           // If still not containing an exact-name or if user expects a location-name match,
           // try searching `location_info` table first and fetch associated rows by location_id.
           try {
+            // 1. Find all properties where building_name_zh ILIKE %query%
+            const broadNameSql = `
+              SELECT * FROM (
+                SELECT 'business' AS source, b.id, b.type, b.building_name_zh as name, NULL as estate_name_zh, b.building_name_zh, b.floor, b.unit, b.area, b.deal_price, b.deal_date, l.province, l.city, l.town, l.street, l.lat, l.long, 0 as distance
+                FROM business b JOIN location_info l ON b.location_id = l.id
+                WHERE b.building_name_zh ILIKE $1
+                UNION ALL
+                SELECT 'house' AS source, h.id, h.type, COALESCE(NULLIF(h.estate_name_zh, ''), NULLIF(h.building_name_zh, ''), h.building_name_zh) as name, h.estate_name_zh, h.building_name_zh, h.floor, h.unit, h.area, h.deal_price, h.deal_date, l.province, l.city, l.town, l.street, l.lat, l.long, 0 as distance
+                FROM house h JOIN location_info l ON h.location_id = l.id
+                WHERE h.building_name_zh ILIKE $1 OR h.estate_name_zh ILIKE $1
+              ) AS t
+              LIMIT 200
+            `;
+            const broadNameRows = (await pool.query(broadNameSql, [`%${qText}%`])).rows || [];
+            debugExtras.broad_name_count = broadNameRows.length;
+
+            // 2. Find location_info IDs by text (town/city/street)
             const locationIds = await findLocationInfoIds(qText);
             debugExtras.location_info_ids = locationIds;
+            let locRows = [];
             if (locationIds && locationIds.length) {
               console.log('Found location_info IDs for query, fetching associated rows:', locationIds.slice(0,10));
-              // For broad queries (like town/city), fetch ALL associated buildings (ignore limit)
-              const locRows = await fetchRowsByLocationIds(locationIds, 200);
-              if (locRows && locRows.length) {
-                debugExtras.location_rows_count = locRows.length;
-                // Merge but prioritize these rows at the front
-                const existing = new Set(result.rows.map(r => `${r.source}_${r.id}`));
-                const merged = [];
-                for (const r of locRows) {
-                  const key = `${r.source}_${r.id}`;
-                  if (!existing.has(key)) {
-                    merged.push(r);
-                    existing.add(key);
-                  }
-                }
-                // append remaining original rows
-                for (const r of result.rows) merged.push(r);
-                result.rows = merged;
+              locRows = await fetchRowsByLocationIds(locationIds, 200);
+              debugExtras.location_rows_count = locRows.length;
+            }
+
+            // 3. If geocoded, find all location_info within 4km (spatial fallback)
+            let spatialRows = [];
+            if (searchLat && searchLng) {
+              const spatialSql = `
+                SELECT id FROM location_info
+                WHERE ST_DWithin(
+                  ST_SetSRID(ST_Point(long, lat), 4326)::geography,
+                  ST_SetSRID(ST_Point($2, $1), 4326)::geography,
+                  4000
+                )
+                LIMIT 200
+              `;
+              const spatialIds = (await pool.query(spatialSql, [searchLat, searchLng])).rows.map(r => r.id);
+              if (spatialIds.length) {
+                spatialRows = await fetchRowsByLocationIds(spatialIds, 200);
+                debugExtras.spatial_rows_count = spatialRows.length;
               }
             }
+
+            // 4. If query matches dist or geom in location_info (as string)
+            let distRows = [];
+            const distSql = `SELECT id FROM location_info WHERE dist ILIKE $1 OR CAST(geom AS TEXT) ILIKE $1 LIMIT 200`;
+            const distIds = (await pool.query(distSql, [`%${qText}%`])).rows.map(r => r.id);
+            if (distIds.length) {
+              distRows = await fetchRowsByLocationIds(distIds, 200);
+              debugExtras.dist_rows_count = distRows.length;
+            }
+
+            // Merge all fallback rows and dedupe by source+id
+            const allFallbackRows = [...broadNameRows, ...locRows, ...spatialRows, ...distRows];
+            const existing = new Set(result.rows.map(r => `${r.source}_${r.id}`));
+            const merged = [];
+            for (const r of allFallbackRows) {
+              const key = `${r.source}_${r.id}`;
+              if (!existing.has(key)) {
+                merged.push(r);
+                existing.add(key);
+              }
+            }
+            for (const r of result.rows) merged.push(r);
+            result.rows = merged;
           } catch (locErr) {
-            console.log('location_info fallback failed:', locErr.message);
+            console.log('location_info/broad fallback failed:', locErr.message);
           }
         }
       } catch (textErr) {
