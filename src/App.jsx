@@ -75,10 +75,14 @@ export default function App() {
     if (filterType) {
       params.append('type', filterType);
     }
-    if (filterdate){
-      params.append('dateRange',filterdate);
+    if (filterdate) {
+      // filterdate is number of days (e.g., 30 for last 30 days)
+      const now = new Date();
+      const date_to = now.toISOString().slice(0, 10); // YYYY-MM-DD
+      const date_from = new Date(now.getTime() - Number(filterdate) * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+      params.append('date_from', date_from);
+      params.append('date_to', date_to);
     }
-    
     // Always use the same search endpoint
     const url = `${API_URL}/api/search?${params.toString()}`;
     console.log('Sending request to:', url);
