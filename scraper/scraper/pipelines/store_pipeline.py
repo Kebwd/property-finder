@@ -361,16 +361,19 @@ class StorePipeline:
             
             # Create new location record with street data
             try:
+                # Assign district using geospatial logic if available
+                dist = None
+                if lat and lng:
+                    dist = assign_district(lat, lng)
+                # Insert with dist column
                 self.cur.execute("""
-                    INSERT INTO location_info (province, city, country, town, street, road, lat, long, geom)
-                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, ST_SetSRID(ST_MakePoint(%s, %s), 4326))
+                    INSERT INTO location_info (province, city, country, town, street, road, lat, long, geom, dist)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, ST_SetSRID(ST_MakePoint(%s, %s), 4326), %s)
                     RETURNING id
-                """, (province, city, country, town, street, road, lat, lng, lng, lat))
-                
+                """, (province, city, country, town, street, road, lat, lng, lng, lat, dist))
                 location_id = self.cur.fetchone()[0]
-                spider.logger.info(f"📍 Created new location: {location_id} for {building_name} in {street}, {town}, {city}")
+                spider.logger.info(f"📍 Created new location: {location_id} for {building_name} in {street}, {town}, {city}, dist={dist}")
                 return location_id
-                
             except Exception as e:
                 spider.logger.error(f"❌ Failed to create location for {building_name}: {e}")
                 # Fall back to default Hong Kong location

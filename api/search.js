@@ -627,6 +627,7 @@ module.exports = async function handler(req, res) {
   try {
     console.log('Search API called with query params:', req.query);
 
+
     const {
       q,  // Add query parameter for geocoding
       type = 'all',
@@ -634,7 +635,9 @@ module.exports = async function handler(req, res) {
       limit = 20,
       lat,
       lng,
-  radius = 4000
+      radius = 4000,
+      date_from,
+      date_to
     } = req.query;
 
     console.log('Parsed params:', { q, type, page, limit, lat, lng, radius });
@@ -761,7 +764,48 @@ module.exports = async function handler(req, res) {
     const offset = (parseInt(page) - 1) * parseInt(limit);
     const searchRadius = parseInt(radius);
 
-    // Geospatial search query
+
+    // Build dynamic SQL filters for type and date range
+    let typeFilter = '';
+    let dateFilter = '';
+    let paramIdx = 6; // $1-$5 are used for lat, lng, radius, limit, offset
+    const queryParams = [searchLat, searchLng, searchRadius, parseInt(limit), offset];
+
+    if (type && type !== 'all') {
+      typeFilter = ` AND b.type = $${paramIdx}`;
+      queryParams.push(type);
+      paramIdx++;
+    }
+    if (date_from) {
+      dateFilter += ` AND b.deal_date >= $${paramIdx}`;
+      queryParams.push(date_from);
+      paramIdx++;
+    }
+    if (date_to) {
+      dateFilter += ` AND b.deal_date <= $${paramIdx}`;
+      queryParams.push(date_to);
+      paramIdx++;
+    }
+
+    let typeFilterH = '';
+    let dateFilterH = '';
+    let paramIdxH = paramIdx;
+    if (type && type !== 'all') {
+      typeFilterH = ` AND h.type = $${paramIdxH}`;
+      queryParams.push(type);
+      paramIdxH++;
+    }
+    if (date_from) {
+      dateFilterH += ` AND h.deal_date >= $${paramIdxH}`;
+      queryParams.push(date_from);
+      paramIdxH++;
+    }
+    if (date_to) {
+      dateFilterH += ` AND h.deal_date <= $${paramIdxH}`;
+      queryParams.push(date_to);
+      paramIdxH++;
+    }
+
     const query = `
       SELECT * FROM (
         SELECT
@@ -793,6 +837,8 @@ module.exports = async function handler(req, res) {
           ST_SetSRID(ST_Point($2, $1), 4326)::geography,
           $3
         )
+        ${typeFilter}
+        ${dateFilter}
 
         UNION ALL
 
@@ -825,12 +871,12 @@ module.exports = async function handler(req, res) {
           ST_SetSRID(ST_Point($2, $1), 4326)::geography,
           $3
         )
+        ${typeFilterH}
+        ${dateFilterH}
       ) AS combined_results
       ORDER BY distance
       LIMIT $4 OFFSET $5
     `;
-
-    const queryParams = [searchLat, searchLng, searchRadius, parseInt(limit), offset];
 
     // Check if database is available
     if (!pool) {
