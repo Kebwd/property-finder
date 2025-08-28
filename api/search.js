@@ -634,7 +634,7 @@ module.exports = async function handler(req, res) {
       limit = 20,
       lat,
       lng,
-      radius = 3000
+  radius = 4000
     } = req.query;
 
     console.log('Parsed params:', { q, type, page, limit, lat, lng, radius });
