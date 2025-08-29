@@ -101,12 +101,12 @@ def run_daily_scrape(mode="daily", enable_database=True, spider_name="house_spid
         "-o", str(json_output),
         "--logfile", str(log_output),
         # Enhanced consistent anti-bot protection settings
-        "-s", "DOWNLOAD_DELAY=1",  # Conservative delay
+    "-s", "DOWNLOAD_DELAY=5",  # Conservative delay
         "-s", "CONCURRENT_REQUESTS=1",
         "-s", "AUTOTHROTTLE_ENABLED=True",
         "-s", "AUTOTHROTTLE_TARGET_CONCURRENCY=0.3",
         "-s", "RETRY_TIMES=5",  # Reasonable retry count
-        "-s", "DOWNLOAD_TIMEOUT=45"  # Longer timeout for stability
+    "-s", "DOWNLOAD_TIMEOUT=180"  # 180s timeout (3 minutes)
     ]
     
     # Conditionally disable pipelines for testing
@@ -137,7 +137,7 @@ def run_daily_scrape(mode="daily", enable_database=True, spider_name="house_spid
                 cwd=Path(__file__).parent,
                 capture_output=True, 
                 text=True, 
-                timeout=300  # 5 minute timeout for stability
+                timeout=180  # 3 minute timeout to match DOWNLOAD_TIMEOUT
             )
             
             # Check results

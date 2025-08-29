@@ -30,7 +30,7 @@ ROBOTSTXT_OBEY = False
 # Concurrency and throttling settings
 CONCURRENT_REQUESTS = 1  # Will be overridden by anti-bot middleware
 CONCURRENT_REQUESTS_PER_DOMAIN = 1
-DOWNLOAD_DELAY = 3  # Will be enhanced by anti-bot middleware
+DOWNLOAD_DELAY = 5  # Will be enhanced by anti-bot middleware
 AUTOTHROTTLE_ENABLED = True  # Will be configured below
 # Disable cookies (enabled by default)
 #COOKIES_ENABLED = False
@@ -73,7 +73,7 @@ DOWNLOADER_MIDDLEWARES = {
 # ScraperAPI Optimized settings for maximum success
 CONCURRENT_REQUESTS = 1          # Conservative with premium proxy
 CONCURRENT_REQUESTS_PER_DOMAIN = 1  # Single request per domain (ScraperAPI handles rotation)
-DOWNLOAD_DELAY = 10              # Let ScraperAPI handle timing
+DOWNLOAD_DELAY = 5               # Conservative delay between requests
 RANDOMIZE_DOWNLOAD_DELAY = 0     # ScraperAPI manages request timing
 
 # AutoThrottle optimized for ScraperAPI
@@ -91,8 +91,8 @@ RETRY_HTTP_CODES = [500, 502, 503, 504, 408, 429, 403, 407, 401]  # Include comm
 COOKIES_ENABLED = True
 COOKIES_DEBUG = False
 
-# Reduced timeouts for faster response
-DOWNLOAD_TIMEOUT = 15            # Reduced from 30 - fail fast approach
+# Download timeout set to 3 minutes
+DOWNLOAD_TIMEOUT = 180           # 180 seconds = 3 minutes
 DOWNLOAD_DELAY_EXPOSURE_RANDOMIZE = False  # Consistent timing with ScraperAPI
 
 # ScraperAPI-specific settings
