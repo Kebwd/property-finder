@@ -19,7 +19,12 @@ async def get_coordinates(address):
     return coords
 
 # Load GeoJSON files and merge into a single GeoDataFrame
-geojson_files = ["path/to/district1.geojson", "path/to/district2.geojson"]
+import glob
+# Use all GeoJSON files in the ALS_GeoJSON_313 directory
+geojson_dir = os.path.join(os.path.dirname(__file__), '..', 'config', 'ALS_GeoJSON_313')
+geojson_files = glob.glob(os.path.join(geojson_dir, '*.geojson'))
+if not geojson_files:
+    raise FileNotFoundError(f"No GeoJSON files found in {geojson_dir}")
 districts = gpd.GeoDataFrame(pd.concat([gpd.read_file(file) for file in geojson_files], ignore_index=True))
 
 def assign_district(lat, lon):
