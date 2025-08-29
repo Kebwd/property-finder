@@ -78,6 +78,14 @@ jobs:
           # Start virtual display and run both spiders. Use DB if DATABASE_URL provided.
           Xvfb :99 -screen 0 1024x768x24 > /dev/null 2>&1 &
           if [ -n "${{ secrets.DATABASE_URL }}" ]; then
+            # Export secrets so child processes (python) can access them
+            export DATABASE_URL="${{ secrets.DATABASE_URL }}"
+            export SUPABASE_URL="${{ secrets.SUPABASE_URL }}"
+            export SUPABASE_SERVICE_ROLE_KEY="${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}"
+            # Masked presence checks
+            echo "DATABASE_URL set: ${DATABASE_URL:+yes}"
+            echo "SUPABASE_URL set: ${SUPABASE_URL:+yes}"
+            echo "SUPABASE_SERVICE_ROLE_KEY set: ${SUPABASE_SERVICE_ROLE_KEY:+yes}"
             echo "DATABASE_URL provided - running spiders with DB enabled"
             python daily_scraper.py --houses daily || echo "house spider failed"
             python daily_scraper.py --stores daily || echo "store spider failed"
