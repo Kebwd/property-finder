@@ -20,8 +20,9 @@ async def get_coordinates(address):
 
 # Load GeoJSON files and merge into a single GeoDataFrame
 import glob
-# Use all GeoJSON files in the ALS_GeoJSON_313 directory
-geojson_dir = os.path.join(os.path.dirname(__file__), '..', 'config', 'ALS_GeoJSON_313')
+# Use all GeoJSON files in the ALS_GeoJSON_313 directory (repo path: scraper/config/...)
+# The pipeline file lives at scraper/scraper/pipelines/, so go up two levels to reach scraper/
+geojson_dir = os.path.normpath(os.path.join(os.path.dirname(__file__), '..', '..', 'config', 'ALS_GeoJSON_313'))
 geojson_files = glob.glob(os.path.join(geojson_dir, '*.geojson'))
 if not geojson_files:
     raise FileNotFoundError(f"No GeoJSON files found in {geojson_dir}")
