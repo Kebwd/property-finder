@@ -29,6 +29,42 @@ Notes:
 - Secrets must be added at repository level (not just environment level) for scheduled workflows.
 - Exact secret names are important; the workflows expect the names above.
 
+## Where keys are referenced
+Quick map so you know which files read which environment variables (edit these files only if you intend to change variable names or defaults).
+
+- DATABASE_URL
+  - `scraper/daily_scraper.py`, `scraper/scrapy_database_integration.py`, `scraper/scraper/pipelines/house_pipeline.py`, `scraper/scraper/pipelines/store_pipeline.py`
+  - `api/search.js`, `api/export.js`, `api/types.js`, `pages/api/diagnose.js`, `property-finder-api/src/db.js`
+  - various scraper utilities and checks: `scraper/check_db.py`, `scraper/test_db_connection.py`, `scraper/.env.template`
+
+- SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY
+  - `api/health.js`
+  - deployment docs: `VERCEL_MIGRATION.md`
+  - setup helpers: `scraper/setup_supabase.ps1`
+
+- SCRAPER_API_KEY
+  - cron trigger and API routes: `api/cron/daily-scraper.js`, `property-finder-api/src/routes/scraper.js`
+  - CI workflow: `.github/workflows/daily-scraping.yml`
+
+- API_BASE_URL
+  - CI workflow: `.github/workflows/daily-scraping.yml`
+  - tests: `test_scraper_api.py`
+
+- GEOCODING_API_KEY / VITE_GEOCODING_API_KEY
+  - backend: `api/search.js`, `property-finder-api/src/server.js`
+  - frontend: `property-finder-ui/src/utils/geocode.js`, `property-finder-ui/src/config/api.js`
+
+- VITE_API_URL
+  - frontend production config: `property-finder-ui/.env.production`
+  - frontend code: `property-finder-ui/src/config/api.js`, components that call the API
+
+- GITHUB_TOKEN / GITHUB_REPO
+  - used by the cron trigger: `api/cron/daily-scraper.js` (if you enable GitHub Actions dispatch from the API)
+
+Notes:
+- Search the repo for `process.env.<KEY>` or `${{ secrets.<KEY> }}` to find other occurrences before renaming keys.
+- There are a few code fallbacks (for example `scraper-secret-key` in `property-finder-api/src/routes/scraper.js`) — remove or replace those defaults if you want to enforce secret usage.
+
 ## Local setup (Windows PowerShell)
 
 1. Clone the repo and install Node dependencies (frontend & backend):

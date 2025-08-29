@@ -21,7 +21,8 @@ if (!GEOCODING_API_KEY) {
     console.error('Failed to read geocoding API key from secret:', err.message);
   }
 }
-console.log('GEOCODING_API_KEY:', GEOCODING_API_KEY);
+// Avoid printing secret values to logs. Only indicate presence.
+console.log('GEOCODING_API_KEY set:', !!GEOCODING_API_KEY);
 if (!GEOCODING_API_KEY) {
   console.error(
     'Missing GEOCODING_API_KEY – please set the env var or mount the secret file.'

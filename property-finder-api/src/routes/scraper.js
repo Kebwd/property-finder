@@ -6,10 +6,19 @@ import fs from 'fs';
 const router = express.Router();
 
 // Security middleware - only allow if API key matches
+// NOTE: Removed hardcoded fallback to a default key. The service requires
+// SCRAPER_API_KEY to be set in the environment. If it is not configured,
+// requests to the scraper endpoints will be rejected with 503 so the
+// administrator is forced to provide a real secret.
 const validateApiKey = (req, res, next) => {
+  const expectedKey = process.env.SCRAPER_API_KEY;
+  // If the key is not configured, reject requests and surface a clear error
+  if (!expectedKey) {
+    console.error('SCRAPER_API_KEY is not configured; rejecting scraper API requests');
+    return res.status(503).json({ error: 'Service misconfigured: SCRAPER_API_KEY not configured' });
+  }
+
   const apiKey = req.headers['x-api-key'] || req.query.api_key;
-  const expectedKey = process.env.SCRAPER_API_KEY || 'scraper-secret-key';
-  
   if (apiKey !== expectedKey) {
     return res.status(401).json({ error: 'Unauthorized: Invalid API key' });
   }

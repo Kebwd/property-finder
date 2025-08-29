@@ -101,7 +101,7 @@ def test_deployment(base_url, api_key):
 if __name__ == "__main__":
     if len(sys.argv) != 3:
         print("Usage: python verify_deployment.py <base_url> <api_key>")
-        print("Example: python verify_deployment.py https://your-app.railway.app scraper-secret-key")
+        print("Example: python verify_deployment.py https://your-app.railway.app <YOUR_SCRAPER_API_KEY>")
         sys.exit(1)
     
     base_url = sys.argv[1].rstrip('/')

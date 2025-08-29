@@ -35,7 +35,7 @@ Since you don't have git installed locally, here's how to deploy using GitHub's 
 In Railway project settings, add:
 ```
 NODE_ENV=production
-SCRAPER_API_KEY=scraper-secret-key-change-this
+SCRAPER_API_KEY=<YOUR_SCRAPER_API_KEY>
 SCRAPER_PATH=../scraper
 GEOCODING_API_KEY=your-google-maps-api-key
 ```
@@ -43,7 +43,7 @@ GEOCODING_API_KEY=your-google-maps-api-key
 ### Step 6: Configure GitHub Secrets
 In GitHub repo → Settings → Secrets and variables → Actions:
 ```
-SCRAPER_API_KEY=scraper-secret-key-change-this
+SCRAPER_API_KEY=<YOUR_SCRAPER_API_KEY>
 API_BASE_URL=https://your-app-name.railway.app
 ```
 

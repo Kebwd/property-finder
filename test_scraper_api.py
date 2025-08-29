@@ -12,7 +12,12 @@ import os
 
 # Configuration
 API_BASE = os.getenv('API_BASE_URL', 'http://localhost:5000')
-API_KEY = os.getenv('SCRAPER_API_KEY', 'scraper-secret-key')
+API_KEY = os.getenv('SCRAPER_API_KEY')
+
+if not API_KEY:
+    print("ERROR: SCRAPER_API_KEY environment variable must be set for this test.")
+    print("Set it with: export SCRAPER_API_KEY=your-key (or set in your shell)")
+    sys.exit(1)
 
 def test_scraper_api():
     print("🕷️  Testing Scraper API")
