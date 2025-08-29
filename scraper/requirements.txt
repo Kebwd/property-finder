@@ -14,3 +14,6 @@ lxml>=4.9.0
 aiohttp>=3.8.0
 # Additional useful packages
 urllib3>=1.26.0
+
+# Geospatial analysis
+geopandas>=0.14.0
