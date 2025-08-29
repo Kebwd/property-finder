@@ -22,13 +22,20 @@ jobs:
     - name: Trigger Scraping
       run: |
         echo "Triggering daily property scraping..."
-        
+        # Ensure required secrets are present to avoid malformed curl URLs
+        if [ -z "${{ secrets.API_BASE_URL }}" ] || [ -z "${{ secrets.SCRAPER_API_KEY }}" ]; then
+          echo "Missing required secrets: API_BASE_URL and/or SCRAPER_API_KEY. Please configure repository secrets."
+          echo "API_BASE_URL='${{ secrets.API_BASE_URL }}'"
+          exit 1
+        fi
+
         # Make API request to trigger scraping
+        API_URL="${{ secrets.API_BASE_URL }}/api/scraper/start"
         response=$(curl -s -w "\n%{http_code}" \
           -X POST \
           -H "Content-Type: application/json" \
           -H "X-API-Key: ${{ secrets.SCRAPER_API_KEY }}" \
-          "${{ secrets.API_BASE_URL }}/api/scraper/start")
+          "$API_URL")
         
         # Extract response body and status code
         http_code=$(echo "$response" | tail -n1)
@@ -84,9 +91,14 @@ jobs:
       if: always()
       run: |
         echo "Fetching recent scraping logs..."
-        
-        logs_response=$(curl -s \
-          "${{ secrets.API_BASE_URL }}/api/scraper/logs?limit=10")
-        
+
+        if [ -z "${{ secrets.API_BASE_URL }}" ]; then
+          echo "Missing API_BASE_URL secret; cannot fetch logs."
+          exit 1
+        fi
+
+        LOGS_URL="${{ secrets.API_BASE_URL }}/api/scraper/logs?limit=10"
+        logs_response=$(curl -s "$LOGS_URL")
+
         echo "Recent logs:"
         echo "$logs_response"
