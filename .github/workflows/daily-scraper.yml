@@ -63,13 +63,19 @@ jobs:
     - name: Run daily scraper
       env:
         DATABASE_URL: ${{ secrets.DATABASE_URL }}
+  SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+  SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
         SCRAPER_MODE: daily
         LOG_LEVEL: INFO
         # Chrome/Selenium settings for CI
         DISPLAY: ":99"
         CHROME_OPTIONS: "--headless --no-sandbox --disable-dev-shm-usage --disable-gpu"
       run: |
-        cd scraper
+  cd scraper
+  # Masked presence checks (will print 'yes' if the secret is set)
+  echo "DATABASE_URL set: ${DATABASE_URL:+yes}"
+  echo "SUPABASE_URL set: ${SUPABASE_URL:+yes}"
+  echo "SUPABASE_SERVICE_ROLE_KEY set: ${SUPABASE_SERVICE_ROLE_KEY:+yes}"
   # Start virtual display for Chrome
   Xvfb :99 -screen 0 1024x768x24 > /dev/null 2>&1 &
   echo "Starting daily property scraper (house then store)..."
