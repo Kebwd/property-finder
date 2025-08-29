@@ -346,7 +346,7 @@ def main():
         enable_database = "--no-db" not in sys.argv
         force_mode = None
         spider_name = "house_spider"  # Default to house spider
-        
+
         for arg in sys.argv[1:]:
             if arg in ["daily", "weekly"]:
                 force_mode = arg
@@ -356,19 +356,19 @@ def main():
                 spider_name = "house_spider"
             elif arg == "--stores":
                 spider_name = "store_spider"
-        
+
         # Determine if this is a weekly run (e.g., Sundays)
         is_sunday = datetime.now().weekday() == 6
-        
+
         logging.info(f"Selected spider: {spider_name}")
         logging.info("Anti-bot protection: ENABLED")
         logging.info(f"Database integration: {'ENABLED' if enable_database else 'DISABLED'}")
-        
+
         # Validate environment before starting
-        if not validate_environment():
+        if not validate_environment(enable_database):
             logging.error("Environment validation failed")
             return False
-        
+
         # Execute scraping based on mode
         if force_mode:
             logging.info(f"Mode override: {force_mode.upper()}")
@@ -379,18 +379,18 @@ def main():
         else:
             logging.info("Running DAILY new deals check")
             success = run_daily_scrape(mode="daily", enable_database=enable_database, spider_name=spider_name)
-        
+
         # Generate summary and cleanup
         try:
             generate_daily_summary()
         except Exception as e:
             logging.error(f"Failed to generate summary: {e}")
-        
+
         try:
             cleanup_old_files()
         except Exception as e:
             logging.error(f"Failed to cleanup old files: {e}")
-        
+
         # Final status
         if success:
             logging.info("Daily scraping completed successfully!")
@@ -404,9 +404,9 @@ def main():
             logging.info("  - Check if anti-bot protection is working properly")
             logging.info("  - Consider using proxy rotation for better success")
             logging.info("  - Increase delays if still getting blocked")
-        
+
         return success
-        
+
     except Exception as e:
         logging.error(f"Critical error in main execution: {e}")
         return False
