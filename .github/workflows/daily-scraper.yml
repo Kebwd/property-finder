@@ -63,27 +63,27 @@ jobs:
     - name: Run daily scraper
       env:
         DATABASE_URL: ${{ secrets.DATABASE_URL }}
-  SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-  SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+        SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
         SCRAPER_MODE: daily
         LOG_LEVEL: INFO
         # Chrome/Selenium settings for CI
         DISPLAY: ":99"
         CHROME_OPTIONS: "--headless --no-sandbox --disable-dev-shm-usage --disable-gpu"
       run: |
-  cd scraper
-  # Masked presence checks (will print 'yes' if the secret is set)
-  echo "DATABASE_URL set: ${DATABASE_URL:+yes}"
-  echo "SUPABASE_URL set: ${SUPABASE_URL:+yes}"
-  echo "SUPABASE_SERVICE_ROLE_KEY set: ${SUPABASE_SERVICE_ROLE_KEY:+yes}"
-  # Start virtual display for Chrome
-  Xvfb :99 -screen 0 1024x768x24 > /dev/null 2>&1 &
-  echo "Starting daily property scraper (house then store)..."
-  # Run house spider (default) and continue even if it fails
-  python daily_scraper.py --houses daily || echo "house spider failed but continuing"
-  # Run store spider as well; allow failure without aborting the job
-  python daily_scraper.py --stores daily || echo "store spider failed"
-  echo "Scraper runs completed (one or both may have failed)"
+        cd scraper
+        # Masked presence checks (will print 'yes' if the secret is set)
+        echo "DATABASE_URL set: ${DATABASE_URL:+yes}"
+        echo "SUPABASE_URL set: ${SUPABASE_URL:+yes}"
+        echo "SUPABASE_SERVICE_ROLE_KEY set: ${SUPABASE_SERVICE_ROLE_KEY:+yes}"
+        # Start virtual display for Chrome
+        Xvfb :99 -screen 0 1024x768x24 > /dev/null 2>&1 &
+        echo "Starting daily property scraper (house then store)..."
+        # Run house spider (default) and continue even if it fails
+        python daily_scraper.py --houses daily || echo "house spider failed but continuing"
+        # Run store spider as well; allow failure without aborting the job
+        python daily_scraper.py --stores daily || echo "store spider failed"
+        echo "Scraper runs completed (one or both may have failed)"
     
     - name: Upload logs and results
       uses: actions/upload-artifact@v4
