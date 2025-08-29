@@ -70,11 +70,14 @@ jobs:
         CHROME_OPTIONS: "--headless --no-sandbox --disable-dev-shm-usage --disable-gpu"
       run: |
         cd scraper
-        # Start virtual display for Chrome
-        Xvfb :99 -screen 0 1024x768x24 > /dev/null 2>&1 &
-        echo "Starting daily property scraper..."
-        python daily_scraper.py
-        echo "Scraper completed successfully!"
+  # Start virtual display for Chrome
+  Xvfb :99 -screen 0 1024x768x24 > /dev/null 2>&1 &
+  echo "Starting daily property scraper (house then store)..."
+  # Run house spider (default) and continue even if it fails
+  python daily_scraper.py --houses daily || echo "house spider failed but continuing"
+  # Run store spider as well; allow failure without aborting the job
+  python daily_scraper.py --stores daily || echo "store spider failed"
+  echo "Scraper runs completed (one or both may have failed)"
     
     - name: Upload logs and results
       uses: actions/upload-artifact@v4
