@@ -1,3 +1,126 @@
+# 🏠 Property Finder — Handoff README
+
+Short guide so a co-worker can pick up the project and run it locally or in CI.
+
+This repo contains:
+- a serverless API (`api/`) for search and health checks (Vercel-style)
+- a React frontend (`property-finder-ui/` / `src/`)
+- a Python Scrapy-based scraper (`scraper/`) with daily automation via GitHub Actions
+
+## Quick checklist for handoff
+- [ ] Create a Supabase project and run migrations (if using Postgres)
+- [ ] Add required GitHub Actions repository secrets (see list below)
+- [ ] Download GeoJSON district files into `scraper/config/ALS_GeoJSON_313`
+- [ ] Run the scraper locally and verify `daily_output/` is created
+
+## Required environment variables / repository secrets
+
+Set these as GitHub repository secrets (Settings → Secrets and variables → Actions) and locally (PowerShell examples below).
+
+- `DATABASE_URL` — Postgres connection string for DB writes (example: `postgresql://user:pass@host:5432/dbname`). Required by scraper when DB integration is enabled.
+- `SUPABASE_URL` — Your Supabase project URL (if using Supabase).
+- `SUPABASE_SERVICE_ROLE_KEY` — Supabase service role key (if using Supabase).
+- `SCRAPER_API_KEY` — Secret key used to authenticate remote scraper triggers.
+- `API_BASE_URL` — If you run a remote scraping API, set this to its base URL (workflow will call `${API_BASE_URL}/api/scraper/start`). If missing the workflow will run the scraper locally.
+- `GEOCODING_API_KEY` — API key used by the search API when geocoding addresses (if required).
+- `GITHUB_TOKEN` — (Optional) token for triggering GitHub Actions from `api/cron/daily-scraper.js`.
+
+Notes:
+- Secrets must be added at repository level (not just environment level) for scheduled workflows.
+- Exact secret names are important; the workflows expect the names above.
+
+## Local setup (Windows PowerShell)
+
+1. Clone the repo and install Node dependencies (frontend & backend):
+
+```powershell
+git clone <repo-url>
+cd property-finder
+npm install
+```
+
+2. API / Frontend (Node)
+
+- Frontend dev (inside `property-finder-ui/`):
+
+```powershell
+cd property-finder-ui
+npm install
+npm run dev
+```
+
+- Serverless API functions are under `api/` and are intended for Vercel. You can run local dev with Vercel CLI or test them with node.
+
+3. Scraper (Python)
+
+- Create virtualenv and install requirements:
+
+```powershell
+cd scraper
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
+pip install --upgrade pip
+pip install -r requirements.txt
+```
+
+- GeoJSON district files: place them under `scraper/config/ALS_GeoJSON_313/` (the repo includes a `download_geojson.ps1` helper):
+
+```powershell
+powershell -ExecutionPolicy Bypass -File download_geojson.ps1
+```
+
+- Run the daily scraper locally (with DB enabled):
+
+```powershell
+# Powershell example
+$env:DATABASE_URL = 'postgresql://user:pass@host:5432/db'
+$env:SUPABASE_URL = 'https://your.supabase.co'
+$env:SUPABASE_SERVICE_ROLE_KEY = 'service-role-key'
+python .\daily_scraper.py --houses daily
+```
+
+- Run without DB (quick test):
+
+```powershell
+python .\daily_scraper.py --no-db --houses daily
+```
+
+Logs & outputs:
+- Logs: `scraper/daily_scraper.log`
+- Run artifacts: `scraper/daily_output/YYYY-MM-DD/` (JSON and log files)
+
+If geopandas fails to install on Windows/CI, check `scraper/check_dependencies.py` for required system packages and consider using the manylinux wheels or a linux runner.
+
+## GitHub Actions & CI notes
+
+- Two workflows are relevant: `.github/workflows/daily-scraping.yml` (triggers remote scraping API or falls back to local-run) and `.github/workflows/daily-scraper.yml` (runs scraper directly in runner when configured).
+- Behavior:
+  - If both `API_BASE_URL` and `SCRAPER_API_KEY` are set, the CI will trigger the remote scraper API and exit.
+  - If either is missing, the workflow falls back to install dependencies and run the scraper in the runner.
+  - When running locally in CI, the job will export `DATABASE_URL`, `SUPABASE_URL`, and `SUPABASE_SERVICE_ROLE_KEY` into the shell environment so the Python process can access them.
+
+Troubleshooting CI:
+- If logs show `DATABASE_URL environment variable not set`, confirm the secret exists in the repository (not only in an environment) and is named exactly `DATABASE_URL`.
+- If GeoPandas/pyogrio fail in CI, install system packages or run the scraper on a Linux runner with the proper binary wheels.
+
+## Key files and where to look
+- `api/` — serverless endpoints (search, health, cron triggers)
+- `property-finder-ui/` — frontend app (Vite / React)
+- `scraper/` — Scrapy spiders, pipelines, and orchestration (`daily_scraper.py`)
+- `scraper/scraper/pipelines/store_pipeline.py` — GeoJSON loading and district assignment
+- `.github/workflows/` — CI workflows for scraping
+
+## Handover tips
+- Add the repository secrets listed above before running scheduled workflows.
+- Confirm the GeoJSON files exist at `scraper/config/ALS_GeoJSON_313/` (CI does not fetch them automatically unless you keep them in repo or add download steps).
+- Use the masked presence checks in the workflows (they print `yes` when secrets are configured) to quickly verify secrets during CI runs.
+
+If you want, I can also add a one-line PowerShell script `quick_start.ps1` that sets example env vars and runs the scraper for handoff convenience.
+
+---
+
+Built with ❤️ — contact the previous maintainer for credentials and deployment keys.
+
 # 🏠 Property Finder - Cloud Native
 
 A modern property finder application with automated daily scraping, built for Vercel + Supabase deployment.
