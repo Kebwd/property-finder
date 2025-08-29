@@ -19,6 +19,9 @@ jobs:
     runs-on: ubuntu-latest
     
     steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
     - name: Trigger Scraping
       run: |
         echo "Triggering daily property scraping..."
@@ -83,15 +86,21 @@ jobs:
     
     - name: Wait and Check Status
       run: |
+        # Skip status check if API_BASE_URL not provided (we ran local scraper)
+        if [ -z "${{ secrets.API_BASE_URL }}" ]; then
+          echo "API_BASE_URL not set - skipping remote status check"
+          exit 0
+        fi
+
         echo "Waiting 30 seconds then checking status..."
         sleep 30
-        
+
         # Check scraping status
         status_response=$(curl -s \
           "${{ secrets.API_BASE_URL }}/api/scraper/status")
-        
+
         echo "Status: $status_response"
-        
+
         # Parse status (basic check)
         if echo "$status_response" | grep -q '"isRunning":true'; then
           echo "Scraping is running..."
@@ -110,10 +119,9 @@ jobs:
       if: always()
       run: |
         echo "Fetching recent scraping logs..."
-
         if [ -z "${{ secrets.API_BASE_URL }}" ]; then
-          echo "Missing API_BASE_URL secret; cannot fetch logs."
-          exit 1
+          echo "API_BASE_URL not set - skipping remote log fetch"
+          exit 0
         fi
 
         LOGS_URL="${{ secrets.API_BASE_URL }}/api/scraper/logs?limit=10"
