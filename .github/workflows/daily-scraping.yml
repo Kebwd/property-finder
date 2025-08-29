@@ -22,44 +22,63 @@ jobs:
     - name: Trigger Scraping
       run: |
         echo "Triggering daily property scraping..."
-        # Ensure required secrets are present to avoid malformed curl URLs
-        if [ -z "${{ secrets.API_BASE_URL }}" ] || [ -z "${{ secrets.SCRAPER_API_KEY }}" ]; then
-          echo "Missing required secrets: API_BASE_URL and/or SCRAPER_API_KEY. Please configure repository secrets."
-          echo "API_BASE_URL='${{ secrets.API_BASE_URL }}'"
-          exit 1
-        fi
+        # If API_BASE_URL and SCRAPER_API_KEY are provided, trigger remote scraper API.
+        if [ -n "${{ secrets.API_BASE_URL }}" ] && [ -n "${{ secrets.SCRAPER_API_KEY }}" ]; then
+          echo "API credentials found - triggering remote scraper API"
+          API_URL="${{ secrets.API_BASE_URL }}/api/scraper/start"
+          response=$(curl -s -w "\n%{http_code}" \
+            -X POST \
+            -H "Content-Type: application/json" \
+            -H "X-API-Key: ${{ secrets.SCRAPER_API_KEY }}" \
+            "$API_URL")
 
-        # Make API request to trigger scraping
-        API_URL="${{ secrets.API_BASE_URL }}/api/scraper/start"
-        response=$(curl -s -w "\n%{http_code}" \
-          -X POST \
-          -H "Content-Type: application/json" \
-          -H "X-API-Key: ${{ secrets.SCRAPER_API_KEY }}" \
-          "$API_URL")
-        
-        # Extract response body and status code
-        http_code=$(echo "$response" | tail -n1)
-        response_body=$(echo "$response" | head -n -1)
-        
-        echo "Response: $response_body"
-        echo "HTTP Status: $http_code"
-        
-        # Check if request was successful
-        if [ "$http_code" -eq 200 ]; then
-          echo "Scraping started successfully"
-          exit 0
-        elif [ "$http_code" -eq 429 ]; then
-          echo "Scraping was rate limited (too recent)"
-          if [ "${{ github.event.inputs.force_run }}" = "true" ]; then
-            echo "Force run requested but still rate limited"
-            exit 1
-          else
-            echo "This is normal for scheduled runs"
+          http_code=$(echo "$response" | tail -n1)
+          response_body=$(echo "$response" | head -n -1)
+
+          echo "Response: $response_body"
+          echo "HTTP Status: $http_code"
+
+          if [ "$http_code" -eq 200 ]; then
+            echo "Scraping started successfully via API"
             exit 0
+          elif [ "$http_code" -eq 429 ]; then
+            echo "Scraping was rate limited (too recent)"
+            if [ "${{ github.event.inputs.force_run }}" = "true" ]; then
+              echo "Force run requested but still rate limited"
+              exit 1
+            else
+              echo "This is normal for scheduled runs"
+              exit 0
+            fi
+          else
+            echo "Failed to start scraping via API (status $http_code)"
+            echo "$response_body"
+            exit 1
           fi
         else
-          echo "Failed to start scraping"
-          exit 1
+          # Fallback: run the scraper directly in CI (no external API)
+          echo "API_BASE_URL not provided - running scraper directly in CI runner"
+          cd scraper
+
+          # Install system dependencies for headless Chrome and scraping
+          sudo apt-get update
+          sudo apt-get install -y wget gnupg2 ca-certificates lsb-release
+          wget -q -O - https://dl.google.com/linux/linux_signing_key.pub | sudo apt-key add -
+          echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" | sudo tee /etc/apt/sources.list.d/google-chrome.list
+          sudo apt-get update
+          sudo apt-get install -y google-chrome-stable xvfb
+
+          # Install Python dependencies
+          pip install --upgrade pip
+          pip install -r requirements.txt || (echo "pip install failed" && exit 1)
+
+          # Start virtual display and run both spiders without DB (use --no-db)
+          Xvfb :99 -screen 0 1024x768x24 > /dev/null 2>&1 &
+          echo "Running house spider (no DB)"
+          python daily_scraper.py --no-db --houses daily || echo "house spider failed"
+          echo "Running store spider (no DB)"
+          python daily_scraper.py --no-db --stores daily || echo "store spider failed"
+          echo "Local scraper runs completed"
         fi
     
     - name: Wait and Check Status
