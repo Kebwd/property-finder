@@ -23,13 +23,14 @@ logging.basicConfig(
     ]
 )
 
-def validate_environment():
+def validate_environment(enable_database=True):
     """Validate required environment variables and dependencies"""
     errors = []
     
     # Check DATABASE_URL if database is enabled
-    if not os.getenv('DATABASE_URL') and os.getenv('SCRAPER_MODE') != 'test':
-        errors.append("DATABASE_URL environment variable not set")
+    if enable_database:
+        if not os.getenv('DATABASE_URL') and os.getenv('SCRAPER_MODE') != 'test':
+            errors.append("DATABASE_URL environment variable not set")
     
     # Check if scrapy is available
     try:
@@ -69,7 +70,7 @@ def run_daily_scrape(mode="daily", enable_database=True, spider_name="house_spid
     logging.info("=" * 60)
     
     # Validate environment first
-    if not validate_environment():
+    if not validate_environment(enable_database):
         logging.error("Environment validation failed, aborting")
         return False
     
