@@ -91,8 +91,8 @@ RETRY_HTTP_CODES = [500, 502, 503, 504, 408, 429, 403, 407, 401]  # Include comm
 COOKIES_ENABLED = True
 COOKIES_DEBUG = False
 
-# Download timeout set to 3 minutes
-DOWNLOAD_TIMEOUT = 180           # 180 seconds = 3 minutes
+# Download timeout set to 45 seconds
+DOWNLOAD_TIMEOUT = 45            # 45 seconds per-request timeout
 DOWNLOAD_DELAY_EXPOSURE_RANDOMIZE = False  # Consistent timing with ScraperAPI
 
 # ScraperAPI-specific settings

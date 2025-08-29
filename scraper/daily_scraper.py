@@ -106,7 +106,7 @@ def run_daily_scrape(mode="daily", enable_database=True, spider_name="house_spid
         "-s", "AUTOTHROTTLE_ENABLED=True",
         "-s", "AUTOTHROTTLE_TARGET_CONCURRENCY=0.3",
         "-s", "RETRY_TIMES=5",  # Reasonable retry count
-    "-s", "DOWNLOAD_TIMEOUT=180"  # 180s timeout (3 minutes)
+    "-s", "DOWNLOAD_TIMEOUT=45"  # 45s per-request timeout
     ]
     
     # Conditionally disable pipelines for testing
@@ -137,7 +137,7 @@ def run_daily_scrape(mode="daily", enable_database=True, spider_name="house_spid
                 cwd=Path(__file__).parent,
                 capture_output=True, 
                 text=True, 
-                timeout=180  # 3 minute timeout to match DOWNLOAD_TIMEOUT
+                timeout=180  # 3 minute overall spider timeout (process-level)
             )
             
             # Check results
