@@ -75,12 +75,17 @@ jobs:
           pip install --upgrade pip
           pip install -r requirements.txt || (echo "pip install failed" && exit 1)
 
-          # Start virtual display and run both spiders without DB (use --no-db)
+          # Start virtual display and run both spiders. Use DB if DATABASE_URL provided.
           Xvfb :99 -screen 0 1024x768x24 > /dev/null 2>&1 &
-          echo "Running house spider (no DB)"
-          python daily_scraper.py --no-db --houses daily || echo "house spider failed"
-          echo "Running store spider (no DB)"
-          python daily_scraper.py --no-db --stores daily || echo "store spider failed"
+          if [ -n "${{ secrets.DATABASE_URL }}" ]; then
+            echo "DATABASE_URL provided - running spiders with DB enabled"
+            python daily_scraper.py --houses daily || echo "house spider failed"
+            python daily_scraper.py --stores daily || echo "store spider failed"
+          else
+            echo "No DATABASE_URL - running spiders without DB (--no-db)"
+            python daily_scraper.py --no-db --houses daily || echo "house spider failed"
+            python daily_scraper.py --no-db --stores daily || echo "store spider failed"
+          fi
           echo "Local scraper runs completed"
         fi
     
